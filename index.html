@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="gl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HENKO · Avaliacións</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d0d0d; --surf: #181818; --surf2: #222; --border: #2a2a2a;
+  --accent: #FF4757; --text: #f0f0f0; --muted: #777;
+  --gold: #ffd700; --silver: #c0c0c0; --green: #4caf50; --red-neg: #ff5c5c;
+  --radius: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Screens ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ── Loading ── */
+#loading-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  display: none; align-items: center; justify-content: center; z-index: 9999;
+}
+#loading-overlay.show { display: flex; }
+.spinner {
+  width: 48px; height: 48px; border: 4px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Logo ── */
+.logo { font-family: 'Bebas Neue', cursive; color: var(--accent); letter-spacing: 2px; }
+.logo-lg { font-size: 72px; line-height: 1; }
+.logo-sm { font-size: 28px; }
+.logo-sub { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+/* ── Cards / shared ── */
+.card {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 24px; border-radius: 12px; border: none; cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary   { background: var(--accent); color: #fff; width: 100%; }
+.btn-secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); width: 100%; }
+.btn-icon      { background: var(--surf2); color: var(--text); padding: 10px 16px; width: auto; font-size: 13px; }
+.btn-danger    { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 16px; font-size: 13px; }
+.btn:hover { opacity: .85; }
+
+.input-field {
+  width: 100%; padding: 14px 16px; background: var(--surf2); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text); font-size: 16px; font-family: 'Inter', sans-serif;
+  outline: none; transition: border-color .2s;
+}
+.input-field:focus { border-color: var(--accent); }
+.input-field::placeholder { color: var(--muted); }
+
+.error-msg { color: var(--red-neg); font-size: 13px; padding: 10px 14px; background: rgba(255,92,92,.1); border-radius: 8px; }
+
+/* ── Screen: Login ── */
+#screen-login { display: none; align-items: center; justify-content: center; padding: 24px; }
+#screen-login.active { display: flex; }
+.login-box { width: 100%; max-width: 400px; text-align: center; }
+.login-box .logo-section { margin-bottom: 40px; }
+.login-card { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Screen: Register ── */
+#screen-register { display: none; align-items: center; justify-content: center; padding: 24px; }
+#screen-register.active { display: flex; }
+.register-box { width: 100%; max-width: 400px; }
+.reg-back-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 0; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }
+.reg-back-btn:hover { color: var(--text); }
+.register-box .logo-section { text-align: center; margin-bottom: 32px; }
+.register-card { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Pulse animation ── */
+@keyframes pulse-btn {
+  0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87,.5); }
+  50%      { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(255,71,87,0); }
+}
+.pulse { animation: pulse-btn .45s ease 3; }
+
+/* ── Dashboard: Header ── */
+#dash-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,13,13,.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px; display: flex; align-items: center; gap: 12px;
+}
+#dash-header .logo { flex: 0 0 auto; }
+#dash-username { flex: 1; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── Dashboard: Main ── */
+#dash-main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+/* ── Empty state ── */
+#dash-empty { text-align: center; padding: 60px 20px; }
+#dash-empty h2 { font-size: 22px; margin-bottom: 12px; }
+#dash-empty p  { color: var(--muted); font-size: 15px; line-height: 1.6; }
+.empty-icon { font-size: 56px; margin-bottom: 20px; }
+
+/* ── Hero card ── */
+.hero-card {
+  background: linear-gradient(135deg, var(--surf) 0%, #1a1010 100%);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px 24px; margin-bottom: 20px; display: flex;
+  align-items: center; gap: 20px;
+}
+.hero-badge { font-size: 48px; flex-shrink: 0; }
+.hero-name  { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.hero-date  { font-size: 13px; color: var(--muted); }
+
+/* ── Stat cards ── */
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.stat-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+
+/* ── Radar ── */
+.radar-card {
+  background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 20px; display: flex; gap: 24px; align-items: center;
+}
+.radar-chart-wrap { flex: 0 0 auto; width: 260px; max-width: 100%; }
+#radar-legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.radar-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.radar-legend-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.radar-legend-name { flex: 1; color: var(--text); }
+.radar-legend-val  { color: var(--muted); min-width: 60px; text-align: right; }
+.radar-legend-pct  { color: var(--accent); font-weight: 600; min-width: 40px; text-align: right; }
+.radar-legend-pct.muted { color: var(--muted); }
+@media (max-width: 640px) {
+  .radar-card { flex-direction: column; }
+  .radar-chart-wrap { width: 100%; }
+}
+
+/* ── Exercise cards ── */
+#exercise-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.exercise-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.exercise-header { display: flex; align-items: flex-start; gap: 12px; }
+.exercise-header-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+.exercise-icon { font-size: 28px; flex-shrink: 0; }
+.exercise-name { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.exercise-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.exercise-value { font-size: 44px; font-weight: 700; color: var(--accent); line-height: 1; }
+.exercise-unit  { font-size: 18px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.exercise-date  { font-size: 12px; color: var(--muted); margin-top: -8px; }
+
+.mini-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.mini-stat  { display: flex; flex-direction: column; gap: 2px; }
+.ms-label   { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.ms-val     { font-size: 13px; font-weight: 600; }
+.ms-val.accent   { color: var(--accent); }
+.ms-val.positive { color: var(--green); }
+.ms-val.negative { color: var(--red-neg); }
+
+.progress-section { display: flex; flex-direction: column; gap: 6px; }
+.progress-label   { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.progress-wrap    { position: relative; }
+.progress-bar     { height: 6px; background: var(--surf2); border-radius: 3px; overflow: hidden; }
+.progress-fill    { height: 100%; background: var(--accent); border-radius: 3px; min-width: 3px; }
+.progress-avg-marker {
+  position: absolute; top: -4px; width: 2px; height: 14px;
+  background: var(--muted); border-radius: 1px; transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.rank-pill {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; background: var(--surf2); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.rank-gold   { border-color: var(--gold);   color: var(--gold); }
+.rank-silver { border-color: var(--silver); color: var(--silver); }
+.rank-bronze { border-color: #cd7f32;       color: #cd7f32; }
+
+.chart-container { height: 90px; margin-top: 4px; }
+.no-data { color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0; }
+
+/* ── Rankings section ── */
+#dash-rankings h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+#rankings-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.ranking-section { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.ranking-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; color: var(--text); }
+.ranking-list  { display: flex; flex-direction: column; gap: 8px; }
+.ranking-row   { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.ranking-row.is-me { background: rgba(255,71,87,.1); border: 1px solid rgba(255,71,87,.3); }
+.ranking-medal { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+.ranking-name  { flex: 1; font-weight: 500; }
+.ranking-val   { font-weight: 700; color: var(--accent); }
+
+/* ── Modal ── */
+#modal-evals {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  display: none; align-items: flex-end; justify-content: center;
+  z-index: 500; padding: 0;
+}
+#modal-evals.open { display: flex; }
+@media (min-width: 600px) { #modal-evals { align-items: center; padding: 20px; } }
+.modal-card {
+  background: var(--surf); border-radius: 20px 20px 0 0; width: 100%;
+  max-height: 92vh; overflow-y: auto; padding: 24px;
+  animation: slideUp .25s ease;
+}
+@media (min-width: 600px) { .modal-card { border-radius: var(--radius); max-width: 480px; max-height: 85vh; } }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.modal-header h3 { font-size: 18px; font-weight: 700; }
+.modal-close-btn { background: var(--surf2); border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.modal-close-btn:hover { color: var(--text); }
+.modal-date-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.modal-date-row label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.modal-note { font-size: 12px; color: var(--muted); padding: 10px 12px; background: var(--surf2); border-radius: 8px; margin-bottom: 16px; }
+#modal-exercises { display: flex; flex-direction: column; gap: 4px; margin-bottom: 20px; }
+.modal-ex-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.modal-ex-row:last-child { border-bottom: none; }
+.modal-ex-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.modal-ex-info { flex: 1; }
+.modal-ex-name { font-size: 13px; font-weight: 600; }
+.modal-ex-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.modal-ex-input {
+  width: 90px; padding: 8px 10px; background: var(--surf2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px; text-align: center;
+  outline: none; transition: border-color .2s; flex-shrink: 0;
+}
+.modal-ex-input:focus { border-color: var(--accent); }
+.modal-ex-input::placeholder { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<!-- ══ SCREEN 1: Login ══════════════════════════════════════════════════════ -->
+<div id="screen-login" class="screen">
+  <div class="login-box">
+    <div class="logo-section">
+      <div class="logo logo-lg">HENKO</div>
+      <div class="logo-sub">Adestramento e Saúde Activa · Burela</div>
+    </div>
+    <div class="login-card card">
+      <input id="login-id" class="input-field" type="number" inputmode="numeric" placeholder="O teu código...">
+      <div id="login-error" class="error-msg" style="display:none">Non atopamos ese código. ¿Es novo/a?</div>
+      <button id="login-btn" class="btn btn-primary">Ver os meus datos</button>
+      <button id="btn-new-user" class="btn btn-secondary">Novo/a deportista</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: Register ══════════════════════════════════════════════════ -->
+<div id="screen-register" class="screen">
+  <div class="register-box">
+    <button id="reg-back" class="reg-back-btn">← Volver</button>
+    <div class="logo-section">
+      <div class="logo logo-lg">HENKO</div>
+      <div class="logo-sub">Adestramento e Saúde Activa · Burela</div>
+    </div>
+    <div class="register-card card">
+      <input id="reg-id"   class="input-field" type="number" inputmode="numeric" placeholder="O teu código">
+      <input id="reg-name" class="input-field" type="text" placeholder="Nome completo">
+      <div id="reg-error" class="error-msg" style="display:none"></div>
+      <button id="reg-btn" class="btn btn-primary">Rexistrarme</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: Dashboard ════════════════════════════════════════════════ -->
+<div id="screen-dashboard" class="screen">
+  <header id="dash-header">
+    <div class="logo logo-sm">HENKO</div>
+    <span id="dash-username"></span>
+    <div class="header-actions">
+      <button id="btn-add-eval" class="btn btn-primary" style="padding:10px 16px;font-size:13px;width:auto">+ Rexistrar avaliación</button>
+      <button id="btn-logout"   class="btn btn-danger">Saír</button>
+    </div>
+  </header>
+
+  <main id="dash-main">
+    <!-- Empty state -->
+    <div id="dash-empty" style="display:none">
+      <div class="empty-icon">🏋️</div>
+      <h2>Benvido/a ao teu perfil!</h2>
+      <p>Aínda non tes ningunha avaliación rexistrada.<br>Preme <strong>+ Rexistrar avaliación</strong> para engadir os teus primeiros datos.</p>
+    </div>
+
+    <!-- Main content -->
+    <div id="dash-content" style="display:none">
+      <!-- Hero -->
+      <div class="hero-card">
+        <div class="hero-badge">💪</div>
+        <div>
+          <div class="hero-name" id="hero-name"></div>
+          <div class="hero-date" id="hero-date"></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Exercicios avaliados</div><div class="stat-value" id="stat-evaluated">—</div></div>
+        <div class="stat-card"><div class="stat-label">Mellor posición</div><div class="stat-value" id="stat-best-pos">—</div></div>
+        <div class="stat-card"><div class="stat-label">Posición media</div><div class="stat-value" id="stat-avg-pos">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total participantes</div><div class="stat-value" id="stat-total">—</div></div>
+      </div>
+
+      <!-- Radar -->
+      <div class="radar-card">
+        <div class="radar-chart-wrap">
+          <canvas id="radar-chart"></canvas>
+        </div>
+        <div id="radar-legend"></div>
+      </div>
+
+      <!-- Exercise cards -->
+      <div id="exercise-cards"></div>
+
+      <!-- Rankings -->
+      <section id="dash-rankings">
+        <h2>🏆 Rankings globais</h2>
+        <div id="rankings-container"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ══ MODAL: Rexistrar avaliación ═══════════════════════════════════════ -->
+<div id="modal-evals">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Rexistrar avaliación</h3>
+      <button class="modal-close-btn" id="modal-close">✕</button>
+    </div>
+    <div class="modal-date-row">
+      <label>Data da avaliación</label>
+      <input type="date" id="modal-date" class="input-field" style="padding:10px 14px">
+    </div>
+    <div class="modal-note">Enche só os exercicios que realizaches hoxe. Os campos baleiros non se gardan.</div>
+    <div id="modal-exercises"></div>
+    <button id="btn-save-evals" class="btn btn-primary">Gardar resultados</button>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG ══════════════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnRZeLF3d5hxE-6lDDBOlzhhRwEqXFaDkHKRrai8TRGvdbMrFPFIc5Zyfbkexhhxo_/exec';
+
+// ══ CONSTANTS ═══════════════════════════════════════════════════════════════
+const MONTHS_GL = ['xan','feb','mar','abr','mai','xuñ','xul','ago','set','out','nov','dec'];
+
+const EXERCISES = {
+  'COLGADO/A':      { unit:'seg', desc:'Tempo en suspensión en barra',    icon:'🏋️', lib:false, rm1:false },
+  'AIRBIKE':        { unit:'seg', desc:'Tempo en completar a proba',       icon:'🚴', lib:true,  rm1:false },
+  'PRESS BANCA':    { unit:'kg',  desc:'1RM estimado · 5 reps (Epley)',    icon:'💪', lib:false, rm1:true  },
+  'JALÓN':          { unit:'kg',  desc:'1RM estimado · 5 reps (Epley)',    icon:'⬇️', lib:false, rm1:true  },
+  'MID-TIGHT PULL': { unit:'kg',  desc:'Carga máxima tirón medio-muslo',   icon:'⬆️', lib:false, rm1:false },
+  'ROWERG':         { unit:'seg', desc:'Tempo en 500m en remo',            icon:'🚣', lib:true,  rm1:false },
+  'PESO CORPORAL':  { unit:'kg',  desc:'Peso corporal rexistrado',         icon:'⚖️', lib:false, rm1:false, norank:true }
+};
+
+const RM1_FACTOR = 1.1667;
+
+// ══ STATE ════════════════════════════════════════════════════════════════════
+let state = { userId: null, userData: null, globalStats: null, charts: {} };
+
+// ══ UTILS ════════════════════════════════════════════════════════════════════
+const $  = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+
+function showLoading(on) {
+  on ? $('loading-overlay').classList.add('show') : $('loading-overlay').classList.remove('show');
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(`screen-${name}`).classList.add('active');
+}
+
+function formatDateGL(s) {
+  if (!s) return '';
+  const [d, m, y] = s.split('/');
+  return `${parseInt(d)} ${MONTHS_GL[parseInt(m) - 1]} ${y}`;
+}
+
+function parseDMY(s) {
+  if (!s) return 0;
+  const p = s.split('/');
+  return p.length === 3 ? new Date(+p[2], +p[1] - 1, +p[0]).getTime() : 0;
+}
+
+function todayInputVal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function exToId(name) {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+}
+
+function getBest(records, lib, rm1) {
+  if (!records || !records.length) return null;
+  const vals = records.map(r => rm1 ? r.carga * RM1_FACTOR : r.carga);
+  return lib ? Math.min(...vals) : Math.max(...vals);
+}
+
+function fmtNum(val, rm1) {
+  if (val === null || val === undefined) return '—';
+  if (rm1) return Math.round(val);
+  return Number.isInteger(val) ? val : parseFloat(val.toFixed(1));
+}
+
+// ══ API ══════════════════════════════════════════════════════════════════════
+async function apiGet(params) {
+  const qs  = new URLSearchParams(params).toString();
+  const res = await fetch(`${SCRIPT_URL}?${qs}`, { redirect: 'follow' });
+  const txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch (e) { throw new Error('Resposta inválida do servidor'); }
+}
+
+// ══ LOGIN ════════════════════════════════════════════════════════════════════
+async function doLogin() {
+  const id = $('login-id').value.trim();
+  if (!id) return;
+  $('login-error').style.display = 'none';
+  showLoading(true);
+  try {
+    const [userData, globalStats] = await Promise.all([
+      apiGet({ action: 'getUser', id }),
+      apiGet({ action: 'getGlobalStats' })
+    ]);
+    if (userData.found) {
+      state.userId = id; state.userData = userData; state.globalStats = globalStats;
+      renderDashboard(); showScreen('dashboard');
+    } else {
+      $('login-error').style.display = 'block';
+      $('btn-new-user').classList.remove('pulse');
+      void $('btn-new-user').offsetWidth; // reflow to restart animation
+      $('btn-new-user').classList.add('pulse');
+    }
+  } catch (e) {
+    $('login-error').textContent = 'Erro de conexión. Comproba a URL do script.';
+    $('login-error').style.display = 'block';
+  }
+  showLoading(false);
+}
+
+// ══ REGISTER ═════════════════════════════════════════════════════════════════
+function showRegister() {
+  $('reg-id').value   = $('login-id').value.trim();
+  $('reg-name').value = '';
+  $('reg-error').style.display = 'none';
+  showScreen('register');
+}
+
+async function doRegister() {
+  const id   = $('reg-id').value.trim();
+  const name = $('reg-name').value.trim();
+  if (!id || !name) {
+    $('reg-error').textContent = 'Enche todos os campos';
+    $('reg-error').style.display = 'block'; return;
+  }
+  showLoading(true);
+  try {
+    const result = await apiGet({ action: 'createUser', id, name });
+    if (result.success) {
+      const [userData, globalStats] = await Promise.all([
+        apiGet({ action: 'getUser', id }),
+        apiGet({ action: 'getGlobalStats' })
+      ]);
+      state.userId = id; state.userData = userData; state.globalStats = globalStats;
+      renderDashboard(); showScreen('dashboard');
+    } else {
+      $('reg-error').textContent = result.error || 'Este código xa ten un deportista rexistrado';
+      $('reg-error').style.display = 'block';
+    }
+  } catch (e) {
+    $('reg-error').textContent = 'Erro de conexión. Inténtao de novo.';
+    $('reg-error').style.display = 'block';
+  }
+  showLoading(false);
+}
+
+// ══ DASHBOARD ════════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const { userId, userData, globalStats } = state;
+  const { name, ejercicios = {} } = userData;
+  const firstName = name.split(' ')[0];
+  $('dash-username').textContent = `Ola, ${firstName}`;
+
+  // destroy old charts
+  Object.values(state.charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  state.charts = {};
+
+  const rankExs   = Object.keys(EXERCISES).filter(e => !EXERCISES[e].norank);
+  const hasRank   = rankExs.some(ex => ejercicios[ex] && ejercicios[ex].length > 0);
+  const hasPeso   = ejercicios['PESO CORPORAL'] && ejercicios['PESO CORPORAL'].length > 0;
+  const hasAny    = hasRank || hasPeso;
+
+  if (!hasAny) {
+    $('dash-empty').style.display   = 'block';
+    $('dash-content').style.display = 'none';
+    return;
+  }
+  $('dash-empty').style.display   = 'none';
+  $('dash-content').style.display = 'block';
+
+  renderHero(name, ejercicios);
+  renderStats(userId, ejercicios, globalStats);
+  renderRadar(userId, ejercicios, globalStats);
+  renderExerciseCards(userId, ejercicios, globalStats);
+  renderRankings(userId, globalStats);
+}
+
+// ── Hero ────────────────────────────────────────────────────────────────────
+function renderHero(name, ejercicios) {
+  $('hero-name').textContent = `Benvido/a, ${name}`;
+  let latest = '';
+  Object.values(ejercicios).flat().forEach(r => {
+    if (!latest || parseDMY(r.fecha) > parseDMY(latest)) latest = r.fecha;
+  });
+  $('hero-date').textContent = latest ? `Última avaliación: ${formatDateGL(latest)}` : '';
+}
+
+// ── Stat cards ──────────────────────────────────────────────────────────────
+function renderStats(userId, ejercicios, gs) {
+  const rankExs = Object.keys(EXERCISES).filter(e => !EXERCISES[e].norank);
+  const evaluated = rankExs.filter(ex => ejercicios[ex] && ejercicios[ex].length > 0).length;
+  $('stat-evaluated').textContent = `${evaluated} / ${rankExs.length}`;
+
+  const positions = rankExs
+    .filter(ex => ejercicios[ex] && ejercicios[ex].length > 0 && gs[ex])
+    .map(ex => ({ pos: (gs[ex].findIndex(r => r.id === userId) + 1), total: gs[ex].length }))
+    .filter(p => p.pos > 0);
+
+  if (positions.length) {
+    const best = positions.reduce((a, b) => a.pos < b.pos ? a : b);
+    const avg  = Math.round(positions.reduce((s, p) => s + p.pos, 0) / positions.length);
+    $('stat-best-pos').textContent = `#${best.pos} de ${best.total}`;
+    $('stat-avg-pos').textContent  = `#${avg}`;
+  } else {
+    $('stat-best-pos').textContent = '—';
+    $('stat-avg-pos').textContent  = '—';
+  }
+
+  const allIds = new Set();
+  Object.keys(gs).filter(k => k !== 'lower_is_better').forEach(ex => {
+    (gs[ex] || []).forEach(r => allIds.add(r.id));
+  });
+  $('stat-total').textContent = allIds.size;
+}
+
+// ── Radar ────────────────────────────────────────────────────────────────────
+function renderRadar(userId, ejercicios, gs) {
+  const exList = Object.keys(EXERCISES).filter(e => !EXERCISES[e].norank);
+  const labels = exList.map(e => e.split('/')[0].split(' ')[0]);
+
+  const data = exList.map(ex => {
+    const cfg     = EXERCISES[ex];
+    const records = ejercicios[ex] || [];
+    if (!records.length || !gs[ex] || !gs[ex].length) return 0;
+    const globalBest = gs[ex][0].last;
+    const userBest   = getBest(records, cfg.lib, cfg.rm1);
+    if (!userBest || globalBest === 0) return 0;
+    const pct = cfg.lib
+      ? Math.min(100, (globalBest / userBest) * 100)
+      : Math.min(100, (userBest  / globalBest) * 100);
+    return Math.round(pct);
+  });
+
+  $('radar-legend').innerHTML = exList.map((ex, i) => {
+    const cfg     = EXERCISES[ex];
+    const records = ejercicios[ex] || [];
+    const best    = records.length ? getBest(records, cfg.lib, cfg.rm1) : null;
+    const valStr  = best !== null ? `${fmtNum(best, cfg.rm1)} ${cfg.unit}` : '—';
+    return `<div class="radar-legend-item">
+      <span class="radar-legend-dot"></span>
+      <span class="radar-legend-name">${ex}</span>
+      <span class="radar-legend-val">${valStr}</span>
+      <span class="radar-legend-pct ${data[i] > 0 ? '' : 'muted'}">${data[i]}%</span>
+    </div>`;
+  }).join('');
+
+  if (state.charts.radar) state.charts.radar.destroy();
+  state.charts.radar = new Chart($('radar-chart').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        data, backgroundColor: 'rgba(255,71,87,.15)', borderColor: '#FF4757',
+        pointBackgroundColor: '#FF4757', pointRadius: 4, borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false },
+          grid: { color: '#2a2a2a' },
+          pointLabels: { color: '#f0f0f0', font: { size: 10 } },
+          angleLines: { color: '#2a2a2a' }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ── Exercise cards ────────────────────────────────────────────────────────────
+function renderExerciseCards(userId, ejercicios, gs) {
+  const container = $('exercise-cards');
+  container.innerHTML = '';
+
+  Object.entries(EXERCISES).forEach(([name, cfg]) => {
+    const records = ejercicios[name] || [];
+    const div     = buildCard(name, cfg, records, userId, gs);
+    container.appendChild(div);
+
+    if (records.length > 1) {
+      const cid    = `chart-${exToId(name)}`;
+      const canvas = div.querySelector(`#${cid}`);
+      if (canvas) {
+        const chartVals   = records.map(r => cfg.rm1 ? r.carga * RM1_FACTOR : r.carga);
+        const chartLabels = records.map(r => formatDateGL(r.fecha));
+        state.charts[cid] = new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: chartLabels,
+            datasets: [{
+              data: chartVals, borderColor: '#FF4757', backgroundColor: 'rgba(255,71,87,.08)',
+              tension: 0.4, pointRadius: 3, pointBackgroundColor: '#FF4757', fill: true
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#777', font: { size: 9 }, maxRotation: 30 }, grid: { color: '#1a1a1a' } },
+              y: { ticks: { color: '#777', font: { size: 9 } }, grid: { color: '#1a1a1a' } }
+            }
+          }
+        });
+      }
+    }
+  });
+}
+
+function buildCard(name, cfg, records, userId, gs) {
+  const div    = document.createElement('div');
+  div.className = 'exercise-card';
+  const hasData = records.length > 0;
+  const last    = hasData ? records[records.length - 1] : null;
+  const prev    = records.length > 1 ? records[records.length - 2] : null;
+  const curVal  = last ? (cfg.rm1 ? last.carga * RM1_FACTOR : last.carga) : null;
+  const allVals = records.map(r => cfg.rm1 ? r.carga * RM1_FACTOR : r.carga);
+
+  // Rank pill
+  let rankHTML = '', rankClass = '';
+  if (!cfg.norank && hasData && gs[name]) {
+    const ranking = gs[name];
+    const total   = ranking.length;
+    const pos     = ranking.findIndex(r => r.id === userId) + 1;
+    if (pos > 0) {
+      let medal = '';
+      const pct = pos / total;
+      if (pos === 1)      { medal = '🥇'; rankClass = 'rank-gold'; }
+      else if (pct <= .10) { medal = '🥈'; rankClass = 'rank-silver'; }
+      else if (pct <= .25) { medal = '🥉'; rankClass = 'rank-bronze'; }
+      rankHTML = `<div class="rank-pill ${rankClass}">${medal} #${pos} de ${total}</div>`;
+    }
+  }
+
+  // Evolution
+  let evoHTML = '';
+  if (prev && curVal !== null) {
+    const prevVal  = cfg.rm1 ? prev.carga * RM1_FACTOR : prev.carga;
+    const diff     = curVal - prevVal;
+    const improved = cfg.lib ? diff < 0 : diff > 0;
+    const sign     = diff > 0 ? '+' : '';
+    const cls      = improved ? 'positive' : diff === 0 ? '' : 'negative';
+    evoHTML = `<div class="mini-stat"><span class="ms-label">Evolución</span><span class="ms-val ${cls}">${sign}${fmtNum(diff, cfg.rm1)} ${cfg.unit}</span></div>`;
+  }
+
+  // Progress bar
+  let progressHTML = '';
+  if (!cfg.norank && hasData && gs[name] && gs[name].length > 0) {
+    const ranking    = gs[name];
+    const pos        = ranking.findIndex(r => r.id === userId) + 1;
+    if (pos > 0) {
+      const userBest   = getBest(records, cfg.lib, cfg.rm1);
+      const globalBest = ranking[0].last;
+      const avgVal     = ranking.reduce((s, r) => s + r.last, 0) / ranking.length;
+      let userPct, avgPct;
+      if (cfg.lib) {
+        userPct = userBest > 0   ? Math.min(100, (globalBest / userBest) * 100) : 0;
+        avgPct  = avgVal  > 0    ? Math.min(100, (globalBest / avgVal)   * 100) : 0;
+      } else {
+        userPct = globalBest > 0 ? Math.min(100, (userBest  / globalBest) * 100) : 0;
+        avgPct  = globalBest > 0 ? Math.min(100, (avgVal    / globalBest) * 100) : 0;
+      }
+      progressHTML = `
+        <div class="progress-section">
+          <div class="progress-label"><span>vs mellor global</span><span>${Math.round(userPct)}%</span></div>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${userPct}%"></div></div>
+            <div class="progress-avg-marker" style="left:${avgPct}%" title="Media global"></div>
+          </div>
+        </div>`;
+    }
+  }
+
+  const cid      = `chart-${exToId(name)}`;
+  const chartHTML = records.length > 1 ? `<div class="chart-container"><canvas id="${cid}"></canvas></div>` : '';
+
+  const miniStats = hasData ? `
+    <div class="mini-stats">
+      <div class="mini-stat"><span class="ms-label">Mín</span><span class="ms-val">${fmtNum(Math.min(...allVals), false)} ${cfg.unit}</span></div>
+      <div class="mini-stat"><span class="ms-label">Máx</span><span class="ms-val">${fmtNum(Math.max(...allVals), false)} ${cfg.unit}</span></div>
+      ${cfg.rm1 ? `<div class="mini-stat"><span class="ms-label">1RM est.</span><span class="ms-val accent">${fmtNum(curVal, true)} kg</span></div>` : ''}
+      ${evoHTML}
+    </div>` : '';
+
+  div.innerHTML = `
+    <div class="exercise-header">
+      <div class="exercise-header-left">
+        <span class="exercise-icon">${cfg.icon}</span>
+        <div>
+          <div class="exercise-name">${name}</div>
+          <div class="exercise-desc">${cfg.desc}</div>
+        </div>
+      </div>
+      ${rankHTML}
+    </div>
+    ${hasData ? `
+      <div>
+        <span class="exercise-value">${fmtNum(curVal, cfg.rm1)}</span><span class="exercise-unit">${cfg.unit}</span>
+      </div>
+      <div class="exercise-date">Último: ${formatDateGL(last.fecha)}</div>
+      ${miniStats}
+      ${progressHTML}
+      ${chartHTML}
+    ` : '<div class="no-data">Sen rexistros aínda</div>'}
+  `;
+  return div;
+}
+
+// ── Rankings ─────────────────────────────────────────────────────────────────
+function renderRankings(userId, gs) {
+  const container = $('rankings-container');
+  container.innerHTML = '';
+
+  Object.keys(EXERCISES).filter(e => !EXERCISES[e].norank).forEach(ex => {
+    const ranking = gs[ex] || [];
+    if (!ranking.length) return;
+    const cfg  = EXERCISES[ex];
+    const top5 = ranking.slice(0, 5);
+
+    const sec = document.createElement('div');
+    sec.className = 'ranking-section';
+    sec.innerHTML = `
+      <div class="ranking-title">${cfg.icon} ${ex}</div>
+      <div class="ranking-list">
+        ${top5.map((entry, i) => {
+          const pos    = i + 1;
+          const medal  = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
+          const isMe   = entry.id === userId;
+          const dispVal = cfg.rm1
+            ? `${Math.round(entry.last)} ${cfg.unit}`
+            : `${fmtNum(entry.raw, false)} ${cfg.unit}`;
+          return `<div class="ranking-row ${isMe ? 'is-me' : ''}">
+            <span class="ranking-medal">${medal}</span>
+            <span class="ranking-name">${entry.name}${isMe ? ' ·tí' : ''}</span>
+            <span class="ranking-val">${dispVal}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    container.appendChild(sec);
+  });
+}
+
+// ══ MODAL ════════════════════════════════════════════════════════════════════
+function buildModalInputs() {
+  $('modal-exercises').innerHTML = Object.entries(EXERCISES).map(([name, cfg]) => {
+    const iid  = `input-${exToId(name)}`;
+    const step = cfg.unit === 'kg' ? '0.5' : '1';
+    return `<div class="modal-ex-row">
+      <span class="modal-ex-icon">${cfg.icon}</span>
+      <div class="modal-ex-info">
+        <div class="modal-ex-name">${name}</div>
+        <div class="modal-ex-desc">${cfg.desc}</div>
+      </div>
+      <input type="number" id="${iid}" class="modal-ex-input" placeholder="${cfg.unit}" step="${step}" min="0">
+    </div>`;
+  }).join('');
+}
+
+function openModal() {
+  $('modal-date').value = todayInputVal();
+  document.querySelectorAll('.modal-ex-input').forEach(i => i.value = '');
+  $('modal-evals').classList.add('open');
+}
+
+function closeModal() { $('modal-evals').classList.remove('open'); }
+
+async function saveEvals() {
+  const dateVal = $('modal-date').value;
+  if (!dateVal) { alert('Selecciona unha data'); return; }
+  const [y, m, d] = dateVal.split('-');
+  const fecha      = `${d}/${m}/${y}`;
+
+  const data = [];
+  Object.keys(EXERCISES).forEach(ex => {
+    const inp = document.getElementById(`input-${exToId(ex)}`);
+    if (!inp || inp.value.trim() === '') return;
+    const carga = parseFloat(inp.value.trim());
+    if (!isNaN(carga)) data.push({ ejercicio: ex, carga, fecha });
+  });
+
+  if (!data.length) { alert('Enche polo menos un exercicio'); return; }
+
+  showLoading(true);
+  try {
+    const result = await apiGet({
+      action: 'addEvals',
+      id:     state.userId,
+      name:   state.userData.name,
+      data:   JSON.stringify(data)
+    });
+    if (result.success) {
+      closeModal();
+      const [userData, globalStats] = await Promise.all([
+        apiGet({ action: 'getUser',        id: state.userId }),
+        apiGet({ action: 'getGlobalStats' })
+      ]);
+      state.userData = userData; state.globalStats = globalStats;
+      renderDashboard();
+    } else {
+      alert('Erro ao gardar: ' + (result.error || 'Descoñecido'));
+    }
+  } catch (e) { alert('Erro de conexión'); }
+  showLoading(false);
+}
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  buildModalInputs();
+
+  $('login-btn').addEventListener('click', doLogin);
+  $('login-id').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
+  $('btn-new-user').addEventListener('click', showRegister);
+
+  $('reg-back').addEventListener('click', () => showScreen('login'));
+  $('reg-btn').addEventListener('click', doRegister);
+  $('reg-name').addEventListener('keydown', e => e.key === 'Enter' && doRegister());
+
+  $('btn-add-eval').addEventListener('click', openModal);
+  $('btn-logout').addEventListener('click', () => {
+    Object.values(state.charts).forEach(c => { try { c.destroy(); } catch(e){} });
+    state = { userId: null, userData: null, globalStats: null, charts: {} };
+    $('login-id').value = '';
+    showScreen('login');
+  });
+
+  $('modal-close').addEventListener('click', closeModal);
+  $('modal-evals').addEventListener('click', e => { if (e.target === $('modal-evals')) closeModal(); });
+  $('btn-save-evals').addEventListener('click', saveEvals);
+
+  showScreen('login');
+});
+</script>
+</body>
+</html>
