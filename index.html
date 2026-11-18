@@ -782,7 +782,7 @@ function buildModalInputs(){
         <div class="modal-ex-desc">${cfg.desc}</div>
       </div>
       <div class="modal-ex-right">
-        <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit}" inputmode="decimal" autocomplete="off" aria-label="${name} (${cfg.unit})">
+        <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit==='seg'?'s ou m:ss':cfg.unit}" inputmode="${cfg.unit==='seg'?'text':'decimal'}" autocomplete="off" aria-label="${name} (${cfg.unit})">
         <button class="nr-btn" id="nr-${id}" type="button">Non realizado</button>
         <span class="locked-tag" id="locked-${id}"></span>
       </div>
@@ -835,6 +835,10 @@ function closeModal(){$('modal-evals').classList.remove('open');}
 
 // Se o valor está fóra de rango, proba se é unha coma esquecida (605 → 60,5).
 function suggestValue(val,cfg){
+  if(cfg.unit==='seg'&&Number.isInteger(val)&&val>=1000&&val<=9999){   // 2145 → 2:14,5
+    const m=Math.floor(val/1000),ss=Math.floor((val%1000)/10),d=val%10;
+    if(ss<60){const sec=m*60+ss+d/10;if(sec>=cfg.min&&sec<=cfg.max)return`${m}:${String(ss).padStart(2,'0')}${d?','+d:''} (${fmtGL(sec)} s)`;}
+  }
   for(const d of [10,100,1000]){
     const v=val/d;
     if(v>=cfg.min&&v<=cfg.max)return fmtGL(Math.round(v*100)/100);
@@ -877,9 +881,12 @@ function reviewEvals(){
     const id=exToId(name);const inp=$(`input-${id}`);
     const raw=inp.value.trim().replace(',','.');
     if(raw===''){missing.push(name);inp.classList.add('err');continue;}
-    // Acepta 60 · 60,5 · 60.5 — calquera outra cousa é un erro de escritura
-    if(!/^\d+(\.\d+)?$/.test(raw)){outOfRange.push(`• ${name}: "${inp.value.trim()}" non é un número válido.`);inp.classList.add('err');continue;}
-    const val=parseFloat(raw);
+    // Acepta 60 · 60,5 · 60.5 — e no remo tamén m:ss (2:14 ou 2:14,5)
+    let val;
+    const mss=cfg.unit==='seg'?raw.match(/^(\d{1,2}):(\d{1,2})(?:\.(\d))?$/):null;
+    if(mss&&+mss[2]<60){val=(+mss[1])*60+(+mss[2])+(mss[3]?+mss[3]/10:0);}
+    else if(/^\d+(\.\d+)?$/.test(raw)){val=parseFloat(raw);}
+    else{outOfRange.push(`• ${name}: "${inp.value.trim()}" non é un número válido.`+(cfg.unit==='seg'?' Podes poñer segundos (134) ou minutos (2:14).':''));inp.classList.add('err');continue;}
     if(val<cfg.min||val>cfg.max){
       const sug=val>cfg.max?suggestValue(val,cfg):null;
       outOfRange.push(`• ${name}: ${fmtGL(val)} ${cfg.unit} non é válido (entre ${cfg.min} e ${cfg.max} ${cfg.unit}).`+(sug?` ¿Querías poñer ${sug}?`:''));
