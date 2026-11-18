@@ -2,329 +2,415 @@
 <html lang="gl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0D0D0D">
 <title>HENKO · Avaliacións</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#0d0d0d;--surf:#181818;--surf2:#222;--border:#2a2a2a;
-  --accent:#FF4757;--text:#f0f0f0;--muted:#777;
-  --gold:#ffd700;--silver:#c0c0c0;--green:#4caf50;--red-neg:#ff5c5c;
-  --blue:#4a9eff;--radius:16px;
+  --bg:#0D0D0D;--surf:#161616;--surf2:#1F1F1F;--border:#2A2A2A;--line:rgba(255,255,255,.07);
+  --accent:#FF4757;--accent-hi:#FF5A68;--accent-lo:#E83A4A;--on-accent:#0D0D0D;
+  --text:#F5F5F5;--text-2:#C8C8C8;--muted:#A0A0A0;
+  --green:#4CAF50;--green-hi:#6FCF73;--red-neg:#FF4757;--gold:#FF4757;
+  --card:radial-gradient(100% 70% at 100% 0%,rgba(255,255,255,.05),rgba(255,255,255,0) 60%),linear-gradient(165deg,#1C1C1C 0%,#111111 75%);
+  --card-hot:radial-gradient(120% 80% at 100% 0%,rgba(255,71,87,.28),rgba(255,71,87,0) 55%),linear-gradient(165deg,#1F1F1F 0%,#121212 70%);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.06),0 14px 32px -14px rgba(0,0,0,.9);
+  --shadow-hot:inset 0 1px 0 rgba(255,255,255,.08),0 18px 40px -16px rgba(255,71,87,.45);
+  --bebas:'Bebas Neue',Impact,sans-serif;--radius:20px;--ease:cubic-bezier(.22,.61,.36,1);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+button,input{font:inherit;color:inherit;}
+a{color:var(--accent);}a:hover{color:var(--text);}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 
-.screen{display:none;min-height:100vh;}
+.screen{display:none;min-height:100vh;min-height:100dvh;}
 .screen.active{display:block;}
 #screen-login.active,#screen-register.active,#screen-trainer.active{display:flex;}
 
-#loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:9999;}
+/* ── Cargando ── */
+#loading-overlay{position:fixed;inset:0;background:rgba(13,13,13,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:9999;}
 #loading-overlay.show{display:flex;}
-.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+.spinner{width:72px;height:72px;border:4px solid rgba(255,71,87,.18);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;box-shadow:0 0 30px -6px rgba(255,71,87,.6);}
+.loading-text{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.loading-title{font-family:var(--bebas);font-size:30px;line-height:1;}
+.loading-sub{font-size:14px;color:var(--muted);}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-.logo{font-family:'Bebas Neue',cursive;color:var(--accent);letter-spacing:2px;}
-.logo-lg{font-size:72px;line-height:1;}
-.logo-sm{font-size:28px;}
-.logo-sub{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+/* ── Marca ── */
+.logo{font-family:var(--bebas);color:var(--text);letter-spacing:.01em;line-height:.85;}
+.logo-dot{color:var(--accent);}
+.logo-lg{font-size:clamp(96px,30vw,128px);}
+.logo-sm{font-size:30px;line-height:1;}
+.logo-sub{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);letter-spacing:.04em;margin-top:6px;}
+.logo-sub::before{content:'';width:28px;height:3px;background:var(--accent);flex-shrink:0;}
+.eyebrow{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;}
+.glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,71,87,.24),rgba(255,71,87,0) 70%);pointer-events:none;}
 
-.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;border-radius:12px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;transition:opacity .15s,transform .1s;}
+/* ── Compoñentes base ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 24px;border-radius:16px;border:none;cursor:pointer;font-size:16px;font-weight:500;transition:transform .12s var(--ease),opacity .15s,box-shadow .2s;-webkit-tap-highlight-color:transparent;}
 .btn:active{transform:scale(.97);}
-.btn-primary{background:var(--accent);color:#fff;width:100%;}
-/* Estilos do botón de rexistro no cabeceiro: en CSS, non inline, para que a
-   media query do móbil poida ocultar o texto e deixar só a icona "+". */
-#btn-add-eval{padding:10px 16px;font-size:13px;width:auto;}
-.btn-secondary{background:transparent;color:var(--accent);border:1.5px solid var(--accent);width:100%;}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);padding:10px 16px;font-size:13px;}
-.btn:hover{opacity:.85;}
+.btn-primary{width:100%;min-height:60px;background:linear-gradient(180deg,var(--accent-hi),var(--accent) 55%,var(--accent-lo));color:var(--on-accent);font-family:var(--bebas);font-size:26px;font-weight:400;letter-spacing:.04em;padding-top:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 28px -8px rgba(255,71,87,.7);}
+.btn-secondary{width:100%;background:transparent;color:var(--text);border:1.5px solid #333;}
+.btn-secondary:hover{border-color:#555;}
+.btn-ghost{min-height:44px;padding:0 18px;border-radius:999px;background:transparent;color:var(--text);border:1px solid var(--border);font-size:14px;font-weight:500;}
+.btn-ghost:hover{border-color:#555;}
+.btn-link{min-height:44px;padding:0 12px;background:none;border:none;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:4px;cursor:pointer;align-self:center;}
+.btn-link:hover{color:var(--text);}
+.btn:disabled,.btn-primary:disabled{opacity:1;cursor:not-allowed;background:#2A2A2A;color:#8A8A8A;box-shadow:none;transform:none;}
 
-.input-field{width:100%;padding:14px 16px;background:var(--surf2);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:16px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
-.input-field:focus{border-color:var(--accent);}
-.input-field::placeholder{color:var(--muted);}
-.error-msg{color:var(--red-neg);font-size:13px;padding:10px 14px;background:rgba(255,92,92,.1);border-radius:8px;}
+.field{display:flex;flex-direction:column;gap:8px;}
+.field-label{font-size:14px;font-weight:500;color:var(--text);}
+.input-field{width:100%;min-height:60px;padding:0 18px;background:var(--surf);border:1.5px solid #333;border-radius:14px;color:var(--text);font-size:18px;font-weight:500;outline:none;transition:border-color .2s,box-shadow .2s;}
+.input-field:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(255,71,87,.18);}
+.input-field::placeholder{color:#8A8A8A;font-weight:400;font-size:16px;}
+.input-code{font-family:var(--bebas);font-size:36px;letter-spacing:.18em;padding-top:4px;min-height:64px;}
+.input-code::placeholder{font-family:'Inter',sans-serif;font-size:16px;letter-spacing:0;}
+input[type=date].input-field{color-scheme:dark;font-size:17px;}
+
+.error-msg{position:relative;padding:14px 16px 14px 52px;border-radius:18px;background:linear-gradient(165deg,rgba(255,71,87,.16),rgba(255,71,87,.05));border:1px solid rgba(255,71,87,.45);font-size:14px;line-height:1.55;color:#E6E6E6;text-align:left;}
+.error-msg::before{content:'!';position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;}
 
 /* ── Login ── */
-#screen-login{align-items:center;justify-content:center;padding:24px;}
-.login-box{width:100%;max-width:400px;text-align:center;}
-.login-box .logo-section{margin-bottom:40px;}
-.login-card{display:flex;flex-direction:column;gap:14px;}
-.trainer-link{margin-top:18px;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;}
-.trainer-link:hover{color:var(--text);}
+#screen-login{position:relative;overflow:hidden;flex-direction:column;}
+.login-brand,.register-brand{position:relative;flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:48px 24px 28px;}
+.login-brand .glow{width:420px;height:420px;top:-120px;right:-140px;}
+.login-box,.register-box{position:relative;width:100%;padding:0 24px calc(24px + env(safe-area-inset-bottom));}
+.login-card,.register-card{display:flex;flex-direction:column;gap:14px;}
+.trainer-link{margin-top:6px;}
+/* Código non atopado: "Novo/a deportista" pasa a ser a acción principal */
+.login-card:has(#login-error[data-kind="notfound"][style*="block"]) #btn-new-user{background:linear-gradient(180deg,var(--accent-hi),var(--accent) 55%,var(--accent-lo));color:var(--on-accent);border:none;font-family:var(--bebas);font-size:26px;letter-spacing:.04em;min-height:60px;padding-top:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 28px -8px rgba(255,71,87,.7);order:5;}
+.login-card:has(#login-error[data-kind="notfound"][style*="block"]) #login-btn{background:transparent;color:var(--text);border:1.5px solid #333;box-shadow:none;font-family:'Inter',sans-serif;font-size:16px;font-weight:500;letter-spacing:0;min-height:56px;padding-top:0;order:4;}
+@keyframes pulse-btn{0%{box-shadow:0 0 0 0 rgba(255,71,87,.6);}70%{box-shadow:0 0 0 14px rgba(255,71,87,0);}100%{box-shadow:0 0 0 0 rgba(255,71,87,0);}}
+.pulse{animation:pulse-btn 1.2s ease-out 3;}
 
-/* ── Register ── */
-#screen-register{align-items:center;justify-content:center;padding:24px;}
-.register-box{width:100%;max-width:400px;}
-.reg-back-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 0;margin-bottom:24px;display:flex;align-items:center;gap:6px;}
-.reg-back-btn:hover{color:var(--text);}
-.register-box .logo-section{text-align:center;margin-bottom:32px;}
-.register-card{display:flex;flex-direction:column;gap:14px;}
+/* ── Rexistro ── */
+#screen-register{position:relative;overflow:hidden;flex-direction:column;}
+#screen-register .glow{width:400px;height:400px;top:-160px;right:-160px;opacity:.8;}
+.reg-top{position:relative;padding:14px 16px 0;}
+.reg-back-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px 0 12px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;}
+.reg-back-btn:hover{border-color:#555;}
+.register-brand{justify-content:center;gap:8px;}
+.register-title{font-family:var(--bebas);font-size:72px;line-height:.88;}
+.register-lead{font-size:15px;color:var(--muted);padding-top:8px;max-width:340px;}
 
-/* ── Trainer ── */
-#screen-trainer{align-items:flex-start;justify-content:center;padding:24px;padding-top:40px;}
-.trainer-box{width:100%;max-width:480px;}
-.trainer-header{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-.trainer-header h2{font-size:20px;font-weight:700;flex:1;}
-.trainer-results{display:flex;flex-direction:column;gap:6px;margin-top:14px;max-height:65vh;overflow-y:auto;}
-.trainer-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surf);border:1px solid var(--border);border-radius:12px;}
-.trainer-name{flex:1;font-size:14px;font-weight:500;}
-.trainer-id{font-size:13px;font-weight:700;color:var(--accent);background:rgba(255,71,87,.1);padding:4px 10px;border-radius:8px;letter-spacing:.5px;}
-.trainer-sexo{font-size:11px;color:var(--muted);}
-.trainer-empty{text-align:center;color:var(--muted);padding:32px;font-size:14px;}
+/* ── Adestrador ── */
+#screen-trainer{position:relative;overflow:hidden;justify-content:center;padding:14px 16px 32px;}
+#screen-trainer .glow{width:380px;height:380px;top:-160px;right:-160px;opacity:.7;}
+.trainer-box{position:relative;width:100%;max-width:560px;}
+.trainer-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-left:8px;}
+.trainer-title{padding:24px 8px 20px;display:flex;flex-direction:column;gap:4px;}
+.trainer-title h2{font-family:var(--bebas);font-weight:400;font-size:56px;line-height:.9;}
+.search-wrap{position:relative;}
+.search-wrap svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:20px;height:20px;pointer-events:none;}
+.search-wrap .input-field{padding-left:50px;font-size:17px;}
+.trainer-results{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+.trainer-row{display:flex;align-items:center;gap:14px;min-height:68px;padding:10px 16px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+.trainer-name{flex:1;font-size:16px;font-weight:600;min-width:0;}
+.trainer-id-wrap{display:flex;flex-direction:column;align-items:flex-end;line-height:1;}
+.trainer-id-label{font-size:14px;color:var(--muted);line-height:1.3;}
+.trainer-id{font-family:var(--bebas);font-size:26px;letter-spacing:.08em;color:var(--accent);}
+.trainer-empty{text-align:center;color:var(--muted);padding:32px;font-size:15px;}
 
-@keyframes pulse-btn{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,71,87,.5);}50%{transform:scale(1.04);box-shadow:0 0 0 10px rgba(255,71,87,0);}}
-.pulse{animation:pulse-btn .45s ease 3;}
+/* ── Panel: cabeceira ── */
+#dash-header{position:sticky;top:0;z-index:100;background:rgba(13,13,13,.94);border-bottom:1px solid transparent;padding:12px 16px 12px 24px;padding-top:calc(12px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;}
+#dash-username{flex:1;font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center;}
+#btn-add-eval{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:auto;z-index:120;}
+.cta-fade{position:fixed;left:0;right:0;bottom:0;height:110px;background:linear-gradient(to top,#0D0D0D 55%,rgba(13,13,13,0));pointer-events:none;z-index:90;}
+#screen-dashboard:not(.active) .cta-fade{display:none;}
 
-/* ── Dashboard header ── */
-#dash-header{position:sticky;top:0;z-index:100;background:rgba(13,13,13,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;}
-#dash-username{flex:1;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.header-actions{display:flex;gap:8px;flex-shrink:0;}
+/* ── Panel: contido ── */
+#dash-main{position:relative;padding:8px 16px 120px;max-width:1240px;margin:0 auto;}
+.dash-grid{display:flex;flex-direction:column;gap:8px;}
 
-/* ── Dashboard main ── */
-#dash-main{padding:20px;max-width:1200px;margin:0 auto;}
-#dash-empty{text-align:center;padding:60px 20px;}
-#dash-empty h2{font-size:22px;margin-bottom:12px;}
-#dash-empty p{color:var(--muted);font-size:15px;line-height:1.6;}
-.empty-icon{font-size:56px;margin-bottom:20px;}
+#dash-empty{display:flex;flex-direction:column;gap:14px;}
+.empty-card{position:relative;overflow:hidden;background:var(--card);border:1px solid rgba(255,71,87,.4);border-radius:24px;box-shadow:var(--shadow-hot);padding:28px 22px;display:flex;flex-direction:column;gap:14px;margin-top:16px;}
+.empty-card .glow{width:340px;height:340px;top:-140px;right:-140px;opacity:1;}
+.empty-icon{position:relative;width:64px;height:64px;border-radius:20px;background:rgba(255,71,87,.14);border:1px solid rgba(255,71,87,.4);display:flex;align-items:center;justify-content:center;}
+.empty-icon svg{width:28px;height:28px;}
+#dash-empty h2{position:relative;font-family:var(--bebas);font-weight:400;font-size:40px;line-height:.95;}
+#dash-empty p{position:relative;color:var(--text-2);font-size:15px;line-height:1.6;}
 
 /* ── Hero ── */
-.hero-card{background:linear-gradient(135deg,var(--surf) 0%,#1a1010 100%);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px;}
-.hero-badge{font-size:48px;flex-shrink:0;}
-.hero-name{font-size:24px;font-weight:700;margin-bottom:4px;}
-.hero-meta{font-size:13px;color:var(--muted);}
+.hero-card{padding:20px 8px 16px;display:flex;flex-direction:column;gap:6px;}
+.hero-name{font-family:var(--bebas);font-size:56px;line-height:.9;text-wrap:balance;}
+.hero-meta{font-size:14px;color:var(--muted);padding-top:4px;}
 
-/* ── Stats ── */
-.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
-@media(min-width:640px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
-.stat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;}
-.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
-.stat-value{font-size:22px;font-weight:700;color:var(--accent);}
-.stat-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+/* ── Indicadores ── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.stat-card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 16px 16px;display:flex;flex-direction:column;gap:2px;}
+.stat-card::before{content:'';position:absolute;left:16px;top:0;width:24px;height:3px;border-radius:0 0 3px 3px;background:var(--accent);}
+.stat-card.hot{background:var(--card-hot);border-color:rgba(255,71,87,.45);box-shadow:var(--shadow-hot);}
+.stat-label{font-size:14px;color:var(--muted);line-height:1.3;}
+.stat-value{font-family:var(--bebas);font-size:48px;line-height:1;padding-top:8px;background:linear-gradient(180deg,#FFF 30%,#B8B8B8);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;}
+.stat-sub{font-size:14px;color:var(--muted);}
 
 /* ── Radar ── */
-.radar-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;display:flex;gap:24px;align-items:center;}
-.radar-chart-wrap{flex:0 0 auto;width:260px;max-width:100%;}
-#radar-legend{flex:1;display:flex;flex-direction:column;gap:10px;}
-.radar-legend-item{display:flex;align-items:center;gap:8px;font-size:13px;}
-.radar-legend-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
-.radar-legend-name{flex:1;}
-.radar-legend-val{color:var(--muted);min-width:64px;text-align:right;}
-.radar-legend-pct{font-weight:700;min-width:40px;text-align:right;}
-.radar-cat-note{font-size:10px;color:var(--muted);margin-top:6px;text-align:right;}
-@media(max-width:640px){.radar-card{flex-direction:column;}.radar-chart-wrap{width:100%;}}
+.radar-card{position:relative;overflow:hidden;background:linear-gradient(165deg,#1C1C1C,#0E0E0E 80%);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;gap:8px;}
+.radar-card::before{content:'';position:absolute;left:50%;top:230px;width:340px;height:340px;margin:-170px 0 0 -170px;border-radius:50%;background:radial-gradient(circle,rgba(255,71,87,.26),rgba(255,71,87,0) 62%);pointer-events:none;}
+.radar-head{position:relative;display:flex;flex-direction:column;gap:2px;}
+.radar-head h3{font-family:var(--bebas);font-weight:400;font-size:32px;line-height:1;}
+.radar-head span{font-size:14px;color:var(--muted);}
+.radar-chart-wrap{position:relative;width:100%;max-width:340px;margin:0 auto;padding:4px 0;}
+#radar-legend{position:relative;display:flex;flex-direction:column;}
+.radar-legend-item{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid rgba(255,255,255,.06);}
+.radar-legend-top{display:flex;align-items:baseline;gap:10px;}
+.radar-legend-name{flex:1;font-family:var(--bebas);font-size:20px;line-height:1.1;letter-spacing:.02em;min-width:0;}
+.radar-legend-val{font-size:14px;color:var(--muted);white-space:nowrap;}
+.radar-legend-pct{font-family:var(--bebas);font-size:22px;line-height:1;min-width:52px;text-align:right;}
+.radar-legend-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;}
+.radar-legend-bar span{display:block;height:100%;border-radius:2px;transform-origin:left;transition:transform 0.9s var(--ease) .4s;}
+.radar-cat-note{font-size:14px;color:var(--muted);padding-top:10px;border-top:1px solid rgba(255,255,255,.06);}
+.no-data{color:var(--muted);font-size:15px;text-align:center;padding:20px 16px;line-height:1.6;}
+#no-history-note{background:var(--card);border:1px dashed #333;border-radius:var(--radius);}
 
-/* ── Exercise cards ── */
-#exercise-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:28px;}
-.exercise-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:14px;}
-.exercise-header{display:flex;align-items:flex-start;gap:12px;}
-.exercise-header-left{display:flex;align-items:center;gap:12px;flex:1;}
-.exercise-icon{font-size:28px;flex-shrink:0;}
-.exercise-name{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
-.exercise-desc{font-size:11px;color:var(--muted);margin-top:2px;}
-.exercise-value{font-size:44px;font-weight:700;color:var(--accent);line-height:1;}
-.exercise-unit{font-size:18px;font-weight:400;color:var(--muted);margin-left:4px;}
-.exercise-date{font-size:12px;color:var(--muted);margin-top:-8px;}
-.mini-stats{display:flex;gap:16px;flex-wrap:wrap;}
-.mini-stat{display:flex;flex-direction:column;gap:2px;}
-.ms-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
-.ms-val{font-size:13px;font-weight:600;}
+/* ── Tarxetas de exercicio ── */
+.section-title{display:flex;justify-content:space-between;align-items:baseline;padding:28px 8px 4px;}
+.section-title h3{font-family:var(--bebas);font-weight:400;font-size:36px;line-height:1;}
+#exercise-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;counter-reset:ex;}
+.exercise-card{position:relative;overflow:hidden;counter-increment:ex;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .16s var(--ease);}
+.exercise-card::before{content:counter(ex,decimal-leading-zero);position:absolute;right:-6px;top:38px;font-family:var(--bebas);font-size:150px;line-height:1;color:rgba(255,255,255,.035);pointer-events:none;}
+.exercise-card:has(.rank-pill){background:var(--card-hot);border-color:rgba(255,71,87,.45);box-shadow:var(--shadow-hot);}
+.exercise-card:active{transform:scale(.985);}
+.exercise-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 18px 0;}
+.exercise-header-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;}
+.exercise-name{font-family:var(--bebas);font-size:24px;line-height:1.05;letter-spacing:.02em;}
+.exercise-desc{font-size:14px;color:var(--muted);line-height:1.4;}
+.rank-pill{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;background:linear-gradient(135deg,#FF6B78,var(--accent) 60%,var(--accent-lo));color:var(--on-accent);border-radius:999px;padding:4px 11px 2px;font-family:var(--bebas);font-size:16px;letter-spacing:.05em;white-space:nowrap;box-shadow:0 4px 14px -4px rgba(255,71,87,.8);}
+.rank-pill svg{width:10px;height:10px;fill:currentColor;margin-top:-2px;}
+.progress-section{display:grid;place-items:center;flex-shrink:0;width:56px;height:56px;}
+.progress-section > *{grid-area:1/1;}
+.progress-ring{--p:0;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--accent) calc(var(--p) * 1%),rgba(255,255,255,.08) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));position:relative;}
+.exercise-main{position:relative;display:flex;align-items:baseline;gap:6px;padding:6px 18px 0;}
+.exercise-value{font-family:var(--bebas);font-size:72px;line-height:.88;background:linear-gradient(180deg,#FFF 30%,#B8B8B8);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.exercise-unit{font-size:16px;font-weight:500;color:var(--muted);}
+.exercise-date{position:relative;font-size:14px;color:var(--muted);padding:6px 18px 0;}
+.chart-container{position:relative;height:76px;margin-top:10px;}
+.mini-stats{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 18px 14px;margin-top:auto;background:rgba(0,0,0,.35);border-top:1px solid rgba(255,255,255,.05);}
+.exercise-card:not(.wide) .mini-stats{margin-top:14px;}
+.mini-stat{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.ms-label{font-size:14px;color:var(--muted);}
+.ms-val{font-size:15px;font-weight:600;white-space:nowrap;}
 .ms-val.accent{color:var(--accent);}
 .ms-val.positive{color:var(--green);}
-.ms-val.negative{color:var(--red-neg);}
-.progress-section{display:flex;flex-direction:column;gap:6px;}
-.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
-.progress-wrap{position:relative;}
-.progress-bar{height:6px;background:var(--surf2);border-radius:3px;overflow:hidden;}
-.progress-fill{height:100%;background:var(--accent);border-radius:3px;min-width:3px;}
-.rank-pill{flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--surf2);border:1px solid var(--border);white-space:nowrap;}
-.rank-gold{border-color:var(--gold);color:var(--gold);}
-.chart-container{height:90px;margin-top:4px;}
-.no-data{color:var(--muted);font-size:13px;text-align:center;padding:12px 0;}
+.ms-val.negative{color:var(--muted);}
+.exercise-card .no-data{position:relative;text-align:left;padding:10px 18px 18px;font-size:14px;}
 
-/* ── Modal ── */
-#modal-evals{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;z-index:500;}
-#modal-evals.open{display:flex;}
-@media(min-width:600px){#modal-evals{align-items:center;padding:20px;}}
-.modal-card{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:24px;animation:slideUp .25s ease;}
-@media(min-width:600px){.modal-card{border-radius:var(--radius);max-width:500px;max-height:88vh;}}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.modal-header h3{font-size:18px;font-weight:700;}
-.modal-close-btn{background:var(--surf2);border:none;color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
-.modal-close-btn:hover{color:var(--text);}
-.modal-date-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-.modal-date-row label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
-.modal-note{font-size:12px;color:var(--muted);padding:10px 12px;background:var(--surf2);border-radius:8px;margin-bottom:14px;line-height:1.5;}
-#modal-exercises{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;}
-.modal-ex-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
-.modal-ex-row:last-child{border-bottom:none;}
-.modal-ex-row.is-nr{opacity:.45;}
-.modal-ex-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0;}
+/* ── Modal (formulario) e follas ── */
+#modal-evals,#trainer-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;z-index:500;}
+#trainer-modal{z-index:600;}
+#modal-evals.open,#trainer-modal.open{display:flex;}
+.modal-card,.sheet-card{position:relative;width:100%;max-height:94vh;max-height:94dvh;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,#151515 0%,#0D0D0D 240px);border-top:1px solid rgba(255,255,255,.1);border-radius:28px 28px 0 0;padding:10px 16px 0;animation:slideUp .32s var(--ease);}
+.sheet-card{padding:10px 20px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;overflow-x:hidden;}
+.modal-card::before,.sheet-card::before{content:'';display:block;width:40px;height:4px;border-radius:2px;background:#3A3A3A;margin:0 auto 6px;}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0 0 8px;}
+.modal-header h3{font-family:var(--bebas);font-weight:400;font-size:44px;line-height:.95;}
+.modal-close-btn{flex-shrink:0;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-size:22px;font-weight:300;display:flex;align-items:center;justify-content:center;}
+.modal-close-btn:hover{background:rgba(255,255,255,.12);}
+.modal-date-row{display:flex;flex-direction:column;gap:8px;margin:20px 0 0;padding:14px 16px 16px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+.modal-date-row label{font-size:14px;color:var(--muted);}
+.modal-note{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.55;color:var(--muted);padding:16px 8px 4px;}
+.modal-note::before{content:'i';width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.modal-note strong{color:var(--text);font-weight:600;}
+#modal-form{padding-top:12px;}
+#modal-exercises{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:16px;counter-reset:mx;}
+.modal-ex-row{counter-increment:mx;position:relative;background:linear-gradient(165deg,#1C1C1C,#111111 75%);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s,background .2s;}
+.modal-ex-row:focus-within{border-color:rgba(255,71,87,.35);}
+.modal-ex-head{display:flex;align-items:center;gap:12px;}
+.modal-ex-num{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-family:var(--bebas);font-size:20px;flex-shrink:0;transition:background .2s,color .2s;}
+.modal-ex-num::before{content:counter(mx,decimal-leading-zero);}
+.modal-ex-row:focus-within .modal-ex-num{background:var(--accent);color:var(--on-accent);}
 .modal-ex-info{flex:1;min-width:0;}
-.modal-ex-name{font-size:13px;font-weight:600;}
-.modal-ex-desc{font-size:10px;color:var(--muted);margin-top:1px;}
-.modal-ex-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
-.modal-ex-input{width:78px;padding:8px 10px;background:var(--surf2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-align:center;outline:none;transition:border-color .2s,opacity .2s;}
-.modal-ex-input:focus{border-color:var(--accent);}
-.modal-ex-input.err{border-color:var(--red-neg);}
-.modal-ex-input::placeholder{color:var(--muted);font-size:12px;}
-.confirm-title{font-size:13px;font-weight:600;margin:4px 0 10px;}
-.confirm-list{display:flex;flex-direction:column;gap:2px;margin-bottom:18px;}
-.confirm-row{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;background:var(--surf2);border-radius:8px;font-size:13px;}
-.confirm-row.nr{color:var(--muted);}
-.confirm-row b{font-variant-numeric:tabular-nums;}
-.confirm-warning{font-size:13px;line-height:1.45;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:rgba(255,215,0,.1);color:var(--gold);}
-.confirm-actions{display:flex;gap:10px;}
-.confirm-actions .btn{flex:1;}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
-.locked-tag{display:none;font-size:11px;font-weight:600;color:var(--green);text-align:right;line-height:1.3;max-width:110px;}
-.modal-ex-row.is-locked .modal-ex-input,.modal-ex-row.is-locked .nr-btn{display:none;}
+.modal-ex-name{display:block;font-family:var(--bebas);font-size:22px;line-height:1.05;letter-spacing:.02em;}
+.modal-ex-desc{font-size:14px;color:var(--muted);line-height:1.4;}
+.modal-ex-right{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;}
+.modal-ex-input{grid-column:1;grid-row:1;width:100%;height:60px;padding:4px 56px 0 16px;background:rgba(0,0,0,.35);border:1.5px solid rgba(255,255,255,.12);border-radius:14px;color:var(--text);font-family:var(--bebas);font-size:34px;letter-spacing:.02em;outline:none;transition:border-color .2s,box-shadow .2s,opacity .2s;}
+.modal-ex-input::placeholder{font-family:'Inter',sans-serif;font-size:15px;color:#7A7A7A;letter-spacing:0;}
+.modal-ex-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(255,71,87,.18),0 0 24px -4px rgba(255,71,87,.5);}
+.modal-ex-input.err{border-color:var(--accent);background:rgba(255,71,87,.08);}
+.modal-ex-row:has(.err){border-color:rgba(255,71,87,.55);background:radial-gradient(100% 80% at 100% 0%,rgba(255,71,87,.18),rgba(255,71,87,0) 60%),linear-gradient(165deg,#1C1C1C,#111111 75%);}
+.modal-ex-row:has(.err) .modal-ex-num{background:rgba(255,71,87,.16);color:var(--accent);}
+.modal-ex-unit{grid-column:1;grid-row:1;justify-self:end;align-self:center;margin-right:16px;font-size:15px;font-weight:600;color:var(--muted);pointer-events:none;z-index:1;}
+.nr-btn{grid-column:2;grid-row:1;height:60px;padding:0 8px;border-radius:14px;border:1.5px solid rgba(255,255,255,.12);background:transparent;color:var(--text-2);cursor:pointer;font-size:14px;font-weight:600;line-height:1.2;transition:all .15s;}
+.nr-btn:hover{border-color:#555;color:var(--text);}
+.nr-btn.active{border-color:var(--text);background:var(--text);color:var(--on-accent);}
+.modal-ex-row.is-nr{background:repeating-linear-gradient(135deg,#121212 0 10px,#161616 10px 20px);}
+.modal-ex-row.is-nr .modal-ex-head,.modal-ex-row.is-nr .modal-ex-unit{opacity:.55;}
+.locked-tag{display:none;grid-column:1/-1;min-height:52px;border-radius:14px;background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3);padding:14px 16px;font-size:15px;font-weight:600;color:var(--green-hi);line-height:1.35;}
+.modal-ex-row.is-locked .modal-ex-input,.modal-ex-row.is-locked .nr-btn,.modal-ex-row.is-locked .modal-ex-unit{display:none;}
 .modal-ex-row.is-locked .locked-tag{display:block;}
-.modal-ex-row.is-locked{opacity:.75;}
-.nr-btn{font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:'Inter',sans-serif;}
-.nr-btn:hover{border-color:var(--muted);color:var(--text);}
-.nr-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,71,87,.08);}
+.modal-ex-row.is-locked{border-color:rgba(76,175,80,.3);}
+.modal-ex-row.is-locked .modal-ex-num{background:rgba(76,175,80,.18);color:var(--green-hi);}
+.modal-ex-row.is-locked .modal-ex-num::before{content:'✓';}
+#modal-error{margin-bottom:12px;}
+.modal-footer{position:sticky;bottom:0;margin:0 -16px;padding:32px 16px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to top,#0D0D0D 70%,rgba(13,13,13,0));z-index:2;}
 
-/* ── Mobile ─────────────────────────────────────────────────────────────── */
-@media(max-width:540px){
-  /* ── Header ── */
-  #dash-header{padding:10px 12px;gap:8px;}
-  #dash-username{display:none;}
-  /* No móbil o botón mantén o texto, pero abreviado: "avaliación" non cabe */
-  #btn-add-eval{padding:10px 13px;font-size:12px;width:auto;flex-shrink:0;}
-  #btn-add-eval .btn-long{display:none;}
-  #btn-logout{padding:8px 10px;font-size:12px;flex-shrink:0;}
+/* Confirmación */
+#modal-confirm{padding:20px 0 0;}
+.confirm-title{font-family:var(--bebas);font-weight:400;font-size:30px;line-height:1;padding:0 8px 12px;}
+.confirm-list{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:4px 16px;margin-bottom:8px;}
+.confirm-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06);font-size:16px;font-weight:500;}
+.confirm-row:first-child{border-top:none;}
+.confirm-row b{font-family:var(--bebas);font-weight:400;font-size:28px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.confirm-row.confirm-date{color:var(--muted);font-size:14px;}
+.confirm-row.confirm-date b{font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--text);}
+.confirm-row.nr{opacity:.6;}
+.confirm-row.nr span:last-child{font-size:14px;color:var(--muted);border:1px dashed #4A4A4A;border-radius:999px;padding:4px 10px;white-space:nowrap;}
+.confirm-warning{position:relative;padding:14px 16px 14px 52px;border-radius:18px;background:linear-gradient(165deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.18);font-size:14px;line-height:1.55;margin-bottom:12px;}
+.confirm-warning::before{content:'i';position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--muted);color:var(--on-accent);font-weight:800;display:flex;align-items:center;justify-content:center;}
+.confirm-actions{display:flex;gap:8px;}
+.confirm-actions #btn-confirm-back{flex:0 0 120px;width:auto;min-height:60px;}
+.confirm-actions #btn-confirm-save{flex:1;width:auto;}
+#btn-confirm-save:disabled{background:linear-gradient(180deg,var(--accent-hi),var(--accent) 55%,var(--accent-lo));color:var(--on-accent);opacity:.8;}
+#btn-confirm-save:disabled::before{content:'';width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(13,13,13,.25);border-top-color:var(--on-accent);animation:spin .8s linear infinite;}
 
-  /* ── Main content ── */
-  #dash-main{padding:12px;}
-  #dash-empty{padding:40px 16px;}
+/* Acceso adestradores */
+.sheet-card .glow{width:340px;height:340px;top:-160px;right:-120px;}
+.sheet-card .modal-header{position:relative;padding:4px 0 0;}
+.sheet-card .modal-header h3{font-size:40px;}
 
-  /* ── Hero ── */
-  .hero-card{padding:16px 14px;gap:14px;flex-wrap:wrap;}
-  .hero-badge{font-size:36px;}
-  .hero-name{font-size:18px;}
-  .hero-meta{font-size:12px;}
+/* ── Aparición ao desprazar (engadida polo script de animacións) ── */
+.rv{opacity:0;transform:translateY(28px) scale(.97);}
+.rv.rv-in{opacity:1;transform:none;transition:opacity .65s var(--ease),transform .65s var(--ease);}
+.rv .chart-container{clip-path:inset(-20px 100% -20px 0);}
+.rv.rv-in .chart-container{clip-path:inset(-20px 0 -20px 0);transition:clip-path 1.2s cubic-bezier(.45,0,.25,1) .25s;}
+.rv .progress-ring{--p:0 !important;}
+.rv .radar-legend-bar span{transform:scaleX(0);}
+.rv.rv-in .radar-legend-bar span{transform:none;}
+@property --p{syntax:'<number>';inherits:false;initial-value:0;}
+.progress-ring{transition:--p 1s var(--ease) .2s;}
 
-  /* ── Stats grid ── */
-  .stats-grid{gap:8px;}
-  .stat-card{padding:14px 10px;}
-  .stat-value{font-size:18px;}
-  .stat-label{font-size:10px;}
+/* ── Escritorio ── */
+@media(min-width:720px){
+  .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+  #exercise-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  #modal-evals,#trainer-modal{align-items:center;padding:24px;}
+  .modal-card{max-width:680px;max-height:90vh;border-radius:28px;border:1px solid rgba(255,255,255,.1);box-shadow:0 40px 100px -20px rgba(0,0,0,.9);padding:16px 24px 0;}
+  .modal-card::before,.sheet-card::before{display:none;}
+  .modal-footer{margin:0 -24px;padding-left:24px;padding-right:24px;}
+  #modal-exercises{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .sheet-card{max-width:460px;border-radius:28px;border:1px solid rgba(255,255,255,.1);padding:28px;}
+  #btn-add-eval{position:static;width:auto;min-height:48px;padding:3px 22px 0;font-size:22px;border-radius:14px;}
+  .cta-fade{display:none;}
+  #dash-header{padding:16px 32px;border-bottom-color:rgba(255,255,255,.06);}
+  #dash-main{padding:24px 32px 64px;}
+  .hero-name{font-size:80px;}
+  .stat-value{font-size:60px;}
+}
+@media(min-width:1024px){
+  .dash-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px;align-items:start;}
+  .dash-grid > .hero-card,.dash-grid > .stats-grid,.dash-grid > #no-history-note{grid-column:1/-1;}
+  .dash-grid > .radar-card{grid-column:1;position:sticky;top:96px;}
+  .dash-grid > .ex-col{grid-column:2;}
+  .dash-grid:has(#radar-card[style*="none"]) > .ex-col{grid-column:1/-1;}
+  .dash-grid:has(#radar-card[style*="none"]) #exercise-cards{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .ex-col .section-title{padding-top:0;}
+  #screen-login.active{flex-direction:row;}
+  .login-brand{flex:7;justify-content:flex-end;padding:64px;background:radial-gradient(90% 80% at 80% 10%,rgba(255,71,87,.3),rgba(255,71,87,0) 60%);border-right:1px solid rgba(255,255,255,.06);}
+  .login-brand .glow{display:none;}
+  .logo-lg{font-size:clamp(160px,17vw,260px);}
+  .login-box{flex:5;display:flex;flex-direction:column;justify-content:center;padding:64px;max-width:560px;}
+  .login-head{display:flex !important;}
+  #screen-register.active{align-items:center;}
+  #screen-register .reg-top,#screen-register .register-brand,#screen-register .register-box{width:100%;max-width:480px;margin:0 auto;}
+}
+.login-head{display:none;flex-direction:column;gap:6px;margin-bottom:12px;}
+.login-head h2{font-family:var(--bebas);font-weight:400;font-size:48px;line-height:1;}
+.login-head p{font-size:15px;color:var(--muted);}
 
-  /* ── Radar ── */
-  .radar-card{padding:16px;}
-  .radar-chart-wrap{width:100%;max-width:290px;margin:0 auto;}
-  #radar-legend{font-size:12px;}
-  .radar-legend-val{min-width:50px;}
-  .radar-legend-pct{min-width:34px;}
-
-  /* ── Exercise cards ──
-     Dúas por fila para aproveitar o ancho. As que teñen gráfico de evolución
-     ocupan a fila enteira, porque nun oco de ~160px non se lerían. */
-  #exercise-cards{grid-template-columns:1fr 1fr;gap:10px;}
-  .exercise-card{padding:13px;gap:9px;}
-  .exercise-header{gap:8px;}
-  .exercise-header-left{gap:8px;}
-  .exercise-icon{font-size:20px;}
-  .exercise-name{font-size:11px;letter-spacing:.3px;line-height:1.25;}
-  .exercise-desc{font-size:9px;line-height:1.3;margin-top:1px;}
-  .exercise-value{font-size:30px;}
-  .exercise-unit{font-size:13px;margin-left:3px;}
-  .exercise-date{font-size:10px;margin-top:-5px;}
-  .mini-stats{gap:10px;}
-  .ms-label{font-size:9px;letter-spacing:.2px;}
-  .ms-val{font-size:12px;}
-  .no-data{font-size:11px;padding:8px 0;}
-
-  /* Tarxeta a fila completa: hai sitio, así que o texto respira */
-  .exercise-card.wide{grid-column:1/-1;padding:16px;gap:12px;}
-  .exercise-card.wide .exercise-icon{font-size:26px;}
-  .exercise-card.wide .exercise-name{font-size:13px;letter-spacing:.5px;}
-  .exercise-card.wide .exercise-desc{font-size:10px;}
-  .exercise-card.wide .exercise-value{font-size:36px;}
-  .exercise-card.wide .exercise-unit{font-size:16px;}
-  .exercise-card.wide .exercise-date{font-size:12px;}
-  .exercise-card.wide .ms-label{font-size:10px;}
-  .exercise-card.wide .ms-val{font-size:13px;}
-
-  /* ── Login / Register ── */
-  #screen-login{padding:20px;}
-  #screen-register{padding:20px;}
-  .logo-lg{font-size:56px;}
-
-  /* ── Trainer ── */
-  #screen-trainer{padding:16px;padding-top:24px;}
-  .trainer-box{max-width:100%;}
-  .trainer-row{padding:10px 12px;}
-
-  /* ── Modal ── */
-  .modal-card{padding:18px;}
-  .modal-ex-input{width:68px;font-size:13px;}
-  .nr-btn{font-size:9px;padding:3px 6px;}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important;}
+  .rv{opacity:1;transform:none;}
 }
 
-@media(max-width:380px){
-  .stats-grid{grid-template-columns:1fr 1fr;}
-  #exercise-cards{gap:8px;}
-  .exercise-card{padding:11px;}
-  .exercise-value{font-size:26px;}
-  .exercise-card.wide .exercise-value{font-size:32px;}
-  .exercise-name{font-size:10px;}
-  .modal-ex-input{width:60px;}
-  .logo-lg{font-size:48px;}
+.progress-section .progress-label{display:block;font-family:var(--bebas);font-size:18px;line-height:1;color:var(--text);padding-top:2px;}
+
+#btn-add-eval{gap:0;white-space:nowrap;}
+#btn-add-eval .btn-long{white-space:pre;}
+.trainer-link{order:9;}
+.exercise-value,.stat-value{padding-right:.08em;}
+.exercise-name,.modal-ex-name,.radar-legend-name{line-height:1.12;}
+.modal-header h3{line-height:1;}
+.sheet-card{overflow:hidden;}
+@media(max-width:1023px){
+  #screen-login.active{justify-content:center;}
+  .login-brand{flex:none;padding:32px 24px 28px;}
+  .login-box{padding-bottom:calc(48px + env(safe-area-inset-bottom));}
+  #screen-register .register-brand{flex:none;padding:40px 24px 28px;}
 }
+#radar-legend{display:none !important;}
+.radar-key{display:flex;gap:18px;padding-top:10px;font-size:14px;color:var(--text-2);}
+.rk{display:flex;align-items:center;gap:8px;}
+.rk::before{content:'';width:18px;flex-shrink:0;}
+.rk-now::before{height:3px;border-radius:2px;background:var(--accent);box-shadow:0 0 8px rgba(255,71,87,.7);}
+.rk-prev::before{border-top:1.5px dashed rgba(200,200,200,.7);}
+.radar-chart-wrap{max-width:360px;padding:8px 0 4px;}
+.radar-card::before{top:52%;}
+html,.modal-card,.sheet-card,.trainer-results{scrollbar-width:none;-ms-overflow-style:none;}
+html::-webkit-scrollbar,.modal-card::-webkit-scrollbar,.sheet-card::-webkit-scrollbar,.trainer-results::-webkit-scrollbar{display:none;}
+@media(max-width:719px){#dash-username{visibility:hidden;}}
 </style>
 </head>
 <body>
-
-<div id="loading-overlay"><div class="spinner"></div></div>
+<div id="loading-overlay" role="status" aria-live="polite"><div class="spinner"></div><div class="loading-text"><span class="loading-title">Cargando</span><span class="loading-sub">Pode tardar uns segundos</span></div></div>
 
 <!-- ══ LOGIN ══ -->
 <div id="screen-login" class="screen">
+  <div class="login-brand">
+    <div class="glow"></div>
+    <div class="logo logo-lg">HENKO</div>
+    <div class="logo-sub">Adestramento e Saúde Activa · Burela</div>
+  </div>
   <div class="login-box">
-    <div class="logo-section">
-      <div class="logo logo-lg">HENKO</div>
-      <div class="logo-sub">Adestramento e Saúde Activa · Burela</div>
+    <div class="login-head"><h2>Entra cos teus datos</h2><p>Introduce o código que che deu o teu adestrador.</p></div>
+    <div class="login-card">
+      <div class="field">
+        <label class="field-label" for="login-id">O teu código</label>
+        <input id="login-id" class="input-field input-code" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 10482">
+      </div>
+      <div id="login-error" class="error-msg" role="alert" style="display:none">Non atopamos ese código. ¿Es novo/a?</div>
+      <button id="login-btn" class="btn btn-primary" type="button">Ver os meus datos</button>
+      <button id="btn-new-user" class="btn btn-secondary" type="button">Novo/a deportista</button>
+      <button id="btn-trainer-access" class="btn-link trainer-link" type="button">Acceso adestradores</button>
     </div>
-    <div class="login-card card">
-      <input id="login-id" class="input-field" type="number" inputmode="numeric" placeholder="O teu código...">
-      <div id="login-error" class="error-msg" style="display:none">Non atopamos ese código. ¿Es novo/a?</div>
-      <button id="login-btn" class="btn btn-primary">Ver os meus datos</button>
-      <button id="btn-new-user" class="btn btn-secondary">Novo/a deportista</button>
-    </div>
-    <div class="trainer-link" id="btn-trainer-access">Acceso entrenadores</div>
   </div>
 </div>
 
 <!-- ══ REGISTER ══ -->
 <div id="screen-register" class="screen">
+  <div class="glow"></div>
+  <div class="reg-top"><button id="reg-back" class="reg-back-btn" type="button">← Volver</button></div>
+  <div class="register-brand">
+    <span class="eyebrow">Benvido/a a HENKO</span>
+    <h1 class="register-title">Crea o teu<br>perfil</h1>
+    <p class="register-lead">Usa o código que che deu o teu adestrador. Con el entrarás sempre.</p>
+  </div>
   <div class="register-box">
-    <button id="reg-back" class="reg-back-btn">← Volver</button>
-    <div class="logo-section">
-      <div class="logo logo-lg">HENKO</div>
-      <div class="logo-sub">Adestramento e Saúde Activa · Burela</div>
-    </div>
-    <div class="register-card card">
-      <input id="reg-id"   class="input-field" type="number" inputmode="numeric" placeholder="O teu código">
-      <input id="reg-name" class="input-field" type="text" placeholder="Nome completo">
-      <div id="reg-error" class="error-msg" style="display:none"></div>
-      <button id="reg-btn" class="btn btn-primary">Rexistrarme</button>
+    <div class="register-card">
+      <div class="field"><label class="field-label" for="reg-id">Código</label><input id="reg-id" class="input-field" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Ex.: 10527"></div>
+      <div class="field"><label class="field-label" for="reg-name">Nome completo</label><input id="reg-name" class="input-field" type="text" autocomplete="name" placeholder="Nome e apelidos"></div>
+      <div id="reg-error" class="error-msg" role="alert" style="display:none"></div>
+      <button id="reg-btn" class="btn btn-primary" type="button">Rexistrarme</button>
     </div>
   </div>
 </div>
 
 <!-- ══ TRAINER ══ -->
 <div id="screen-trainer" class="screen">
+  <div class="glow"></div>
   <div class="trainer-box">
     <div class="trainer-header">
-      <div class="logo logo-sm">HENKO</div>
-      <h2>Modo Entrenador</h2>
-      <button id="trainer-back" class="btn btn-ghost">Saír</button>
+      <div class="logo logo-sm">HENKO<span class="logo-dot">.</span></div>
+      <button id="trainer-back" class="btn btn-ghost" type="button">Saír</button>
     </div>
-    <input id="trainer-search" class="input-field" type="text" placeholder="Buscar alumno/a por nome...">
+    <div class="trainer-title"><span class="eyebrow">Modo adestrador</span><h2>Deportistas</h2></div>
+    <div class="search-wrap"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="#A0A0A0" stroke-width="2"/><path d="M13 13l5 5" stroke="#A0A0A0" stroke-width="2" stroke-linecap="round"/></svg><label for="trainer-search" class="field-label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Buscar por nome</label><input id="trainer-search" class="input-field" type="search" autocomplete="off" placeholder="Buscar por nome…"></div>
     <div id="trainer-results" class="trainer-results"></div>
   </div>
 </div>
@@ -332,69 +418,96 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <!-- ══ DASHBOARD ══ -->
 <div id="screen-dashboard" class="screen">
   <header id="dash-header">
-    <div class="logo logo-sm">HENKO</div>
+    <div class="logo logo-sm">HENKO<span class="logo-dot">.</span></div>
     <span id="dash-username"></span>
     <div class="header-actions">
-      <button id="btn-add-eval" class="btn btn-primary">+ Rexistrar<span class="btn-long"> avaliación</span></button>
-      <button id="btn-logout" class="btn btn-ghost">Saír</button>
+      <button id="btn-add-eval" class="btn btn-primary" type="button">+ Rexistrar<span class="btn-long"> avaliación</span></button>
+      <button id="btn-logout" class="btn btn-ghost" type="button">Saír</button>
     </div>
   </header>
+  <div class="cta-fade" aria-hidden="true"></div>
   <main id="dash-main">
     <div id="dash-empty" style="display:none">
-      <div class="empty-icon">🏋️</div>
-      <h2>Benvido/a ao teu perfil!</h2>
-      <p>Aínda non tes ningunha avaliación rexistrada.<br>Preme <strong>+ Rexistrar avaliación</strong> para engadir os teus primeiros datos.</p>
+      <div class="empty-card">
+        <div class="glow"></div>
+        <div class="empty-icon"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 4v20M4 14h20" stroke="#FF4757" stroke-width="3" stroke-linecap="round"/></svg></div>
+        <h2>A túa primeira avaliación</h2>
+        <p>Aínda non tes ningunha avaliación rexistrada. Preme <strong>+ Rexistrar avaliación</strong> e verás aquí as túas cifras, as marcas persoais e a evolución.</p>
+      </div>
     </div>
     <div id="dash-content" style="display:none">
-      <div class="hero-card">
-        <div class="hero-badge">💪</div>
-        <div><div class="hero-name" id="hero-name"></div><div class="hero-meta" id="hero-date"></div></div>
+      <div class="dash-grid">
+        <div class="hero-card">
+          <span class="eyebrow">O teu panel</span>
+          <div class="hero-name" id="hero-name"></div>
+          <div class="hero-meta" id="hero-date"></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Exercicios avaliados</div><div class="stat-value" id="stat-evaluated">—</div><div class="stat-sub" id="stat-evaluated-sub"></div></div>
+          <div class="stat-card"><div class="stat-label">Avaliacións feitas</div><div class="stat-value" id="stat-sessions">—</div><div class="stat-sub" id="stat-sessions-sub"></div></div>
+          <div class="stat-card hot"><div class="stat-label">Marcas persoais</div><div class="stat-value" id="stat-pbs">—</div><div class="stat-sub" id="stat-pbs-sub"></div></div>
+          <div class="stat-card"><div class="stat-label">Última avaliación</div><div class="stat-value" id="stat-last">—</div><div class="stat-sub" id="stat-last-sub"></div></div>
+        </div>
+        <div class="radar-card" id="radar-card">
+          <div class="radar-head"><h3>Rendemento</h3><span>Última avaliación fronte á anterior</span><div class="radar-key"><span class="rk rk-now">Actual</span><span class="rk rk-prev">Anterior</span></div></div>
+          <div class="radar-chart-wrap"><canvas id="radar-chart"></canvas></div>
+          <div id="radar-legend"></div>
+        </div>
+        <div class="no-data" id="no-history-note" style="display:none">
+          Aínda non hai historial para comparar.<br>
+          Na túa <strong>segunda avaliación</strong> verás aquí a túa evolución.
+        </div>
+        <div class="ex-col">
+          <div class="section-title"><h3>Exercicios</h3></div>
+          <div id="exercise-cards"></div>
+        </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Exercicios avaliados</div><div class="stat-value" id="stat-evaluated">—</div><div class="stat-sub" id="stat-evaluated-sub"></div></div>
-        <div class="stat-card"><div class="stat-label">Avaliacións feitas</div><div class="stat-value" id="stat-sessions">—</div><div class="stat-sub" id="stat-sessions-sub"></div></div>
-        <div class="stat-card"><div class="stat-label">Marcas persoais</div><div class="stat-value" id="stat-pbs">—</div><div class="stat-sub" id="stat-pbs-sub"></div></div>
-        <div class="stat-card"><div class="stat-label">Última avaliación</div><div class="stat-value" id="stat-last">—</div><div class="stat-sub" id="stat-last-sub"></div></div>
-      </div>
-      <div class="radar-card" id="radar-card">
-        <div class="radar-chart-wrap"><canvas id="radar-chart"></canvas></div>
-        <div id="radar-legend"></div>
-      </div>
-      <div class="no-data" id="no-history-note" style="display:none">
-        Aínda non hai historial para comparar.<br>
-        Na túa <strong>segunda avaliación</strong> verás aquí a túa evolución.
-      </div>
-      <div id="exercise-cards"></div>
     </div>
   </main>
 </div>
 
-<!-- ══ MODAL ══ -->
-<div id="modal-evals">
+<!-- ══ MODAL: FORMULARIO ══ -->
+<div id="modal-evals" role="dialog" aria-modal="true" aria-labelledby="modal-evals-title">
   <div class="modal-card">
     <div class="modal-header">
-      <h3>Rexistrar avaliación</h3>
-      <button class="modal-close-btn" id="modal-close">✕</button>
+      <div><span class="eyebrow">Rexistrar resultados</span><h3 id="modal-evals-title">Nova avaliación</h3></div>
+      <button class="modal-close-btn" id="modal-close" type="button" aria-label="Pechar">×</button>
     </div>
     <div class="modal-date-row">
-      <label>Data da avaliación</label>
-      <input type="date" id="modal-date" class="input-field" style="padding:10px 14px">
+      <label for="modal-date">Data da avaliación</label>
+      <input type="date" id="modal-date" class="input-field">
     </div>
-    <div class="modal-note">Todos os campos son obrigatorios. Se non realizaches un exercicio, marca <strong>Non realizado</strong>. Cada exercicio só se pode rexistrar <strong>unha vez por día</strong>.</div>
+    <div class="modal-note"><span>Enche todos os exercicios. Se non fixeches algún, marca <strong>Non realizado</strong>. Cada exercicio só se pode rexistrar <strong>unha vez por día</strong>.</span></div>
     <div id="modal-form">
       <div id="modal-exercises"></div>
-      <div id="modal-error" class="error-msg" style="display:none;margin-bottom:14px;white-space:pre-line"></div>
-      <button id="btn-save-evals" class="btn btn-primary">Revisar e gardar</button>
+      <div id="modal-error" class="error-msg" role="alert" style="display:none;white-space:pre-line"></div>
+      <div class="modal-footer"><button id="btn-save-evals" class="btn btn-primary" type="button">Revisar e gardar</button></div>
     </div>
     <div id="modal-confirm" style="display:none">
       <div id="confirm-warning" class="confirm-warning" style="display:none"></div>
-      <div class="confirm-title">Revisa os datos antes de gardar</div>
+      <div class="confirm-title">Revisa antes de gardar</div>
       <div id="confirm-list" class="confirm-list"></div>
-      <div class="confirm-actions">
-        <button id="btn-confirm-back" class="btn btn-secondary" type="button">Corrixir</button>
-        <button id="btn-confirm-save" class="btn btn-primary" type="button">Confirmar e gardar</button>
+      <div class="modal-footer">
+        <div class="confirm-actions">
+          <button id="btn-confirm-back" class="btn btn-secondary" type="button">Corrixir</button>
+          <button id="btn-confirm-save" class="btn btn-primary" type="button">Confirmar e gardar</button>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ACCESO ADESTRADORES ══ -->
+<div id="trainer-modal" role="dialog" aria-modal="true" aria-labelledby="trainer-modal-title">
+  <div class="sheet-card">
+    <div class="glow"></div>
+    <div class="modal-header">
+      <div><span class="eyebrow">Só persoal</span><h3 id="trainer-modal-title">Acceso adestradores</h3></div>
+      <button class="modal-close-btn" id="trainer-modal-close" type="button" aria-label="Pechar">×</button>
+    </div>
+    <div class="field" style="position:relative"><label class="field-label" for="trainer-pass">Contrasinal</label><input id="trainer-pass" class="input-field" type="password" autocomplete="current-password"></div>
+    <div id="trainer-pass-error" class="error-msg" role="alert" style="display:none;position:relative"></div>
+    <button id="trainer-pass-btn" class="btn btn-primary" type="button" style="position:relative">Entrar</button>
   </div>
 </div>
 
@@ -498,11 +611,12 @@ async function doLogin(){
       renderDashboard();showScreen('dashboard');
     }else{
       $('login-error').textContent='Non atopamos ese código. ¿Es novo/a?';
+      $('login-error').dataset.kind='notfound';
       $('login-error').style.display='block';
       $('btn-new-user').classList.remove('pulse');void $('btn-new-user').offsetWidth;
       $('btn-new-user').classList.add('pulse');
     }
-  }catch(e){$('login-error').textContent=e.message||'Erro de conexión.';$('login-error').style.display='block';}
+  }catch(e){$('login-error').textContent=e.message||'Erro de conexión.';$('login-error').dataset.kind='conn';$('login-error').style.display='block';}
   showLoading(false);
 }
 
@@ -510,10 +624,18 @@ async function doLogin(){
 // A lista de alumnos sáese de getGlobalStats, que é o que soporta o servidor
 // desplegado hoxe. Cando se redespregue o Apps Script convén cambiar isto por
 // getClients, que valida o código no servidor en vez de no navegador.
-async function openTrainer(){
-  const code=prompt('Código de acceso entrenadores:');
-  if(code===null)return;                       // o usuario cancelou
-  if(code.trim()!==TRAINER_CODE){alert('Código incorrecto');return;}
+// O acceso pídese nun modal propio (#trainer-modal) en vez de prompt()/alert().
+function openTrainer(){
+  $('trainer-pass').value='';showTrainerError('');
+  $('trainer-modal').classList.add('open');
+  setTimeout(()=>$('trainer-pass').focus(),50);
+}
+function closeTrainerModal(){$('trainer-modal').classList.remove('open');}
+function showTrainerError(msg){const e=$('trainer-pass-error');e.textContent=msg;e.style.display=msg?'block':'none';}
+async function submitTrainer(){
+  const code=$('trainer-pass').value;
+  if(code.trim()!==TRAINER_CODE){showTrainerError('Contrasinal incorrecto. Téntao de novo.');$('trainer-pass').select();return;}
+  showTrainerError('');
   showLoading(true);
   try{
     const gs=await apiGet({action:'getGlobalStats'});
@@ -525,8 +647,9 @@ async function openTrainer(){
     });
     state.allClients=Object.values(clientMap).sort((a,b)=>a.name.localeCompare(b.name,'gl'));
     $('trainer-search').value='';
+    closeTrainerModal();
     renderTrainerResults('');showScreen('trainer');
-  }catch(e){alert('Erro de conexión');}
+  }catch(e){showTrainerError(e.message||'Erro de conexión');}
   showLoading(false);
 }
 function renderTrainerResults(q){
@@ -534,7 +657,7 @@ function renderTrainerResults(q){
   const list=(state.allClients||[]).filter(c=>!query||c.name.toLowerCase().includes(query));
   const cont=$('trainer-results');
   if(!list.length){cont.innerHTML=`<div class="trainer-empty">${query?`Sen resultados para "${escapeHtml(q)}"`:'Non hai alumnos'}</div>`;return;}
-  cont.innerHTML=list.map(c=>`<div class="trainer-row"><span class="trainer-name">${escapeHtml(c.name)}</span><span class="trainer-id">${escapeHtml(c.id)}</span></div>`).join('');
+  cont.innerHTML=list.map(c=>`<div class="trainer-row"><span class="trainer-name">${escapeHtml(c.name)}</span><span class="trainer-id-wrap"><span class="trainer-id-label">Código</span><span class="trainer-id">${escapeHtml(c.id)}</span></span></div>`).join('');
 }
 
 // ══ REGISTER ═══════════════════════════════════════════════════════════════
@@ -667,6 +790,13 @@ function renderRadar(ejercicios){
   const labels=medidos.map(e=>EXERCISES[e].short||e.split('/')[0].split(' ')[0]);
 
   const data=medidos.map(ex=>pctOfBest(EXERCISES[ex],ejercicios[ex]||[]));
+  // Medición anterior (penúltima) en % da mellor marca, para comparar no mesmo radar
+  const prevData=medidos.map(ex=>{
+    const cfg=EXERCISES[ex];const v=exValues(cfg,ejercicios[ex]||[]);
+    if(v.length<2)return null;
+    const p=v[v.length-2],best=cfg.lib?Math.min(...v):Math.max(...v);
+    return Math.round(Math.min(100,cfg.lib?(best/p)*100:(p/best)*100));
+  });
 
   $('radar-legend').innerHTML=medidos.map((ex,i)=>{
     const cfg=EXERCISES[ex];const vals=exValues(cfg,ejercicios[ex]||[]);
@@ -674,18 +804,29 @@ function renderRadar(ejercicios){
     const valStr=`${fmtNum(lastV,cfg.rm1)} ${cfg.unit}`;
     const col=data[i]>=100?'var(--green)':data[i]>=90?'var(--accent)':'var(--red-neg)';
     return`<div class="radar-legend-item">
-      <span class="radar-legend-dot"></span>
-      <span class="radar-legend-name">${ex}</span>
-      <span class="radar-legend-val">${valStr}</span>
-      <span class="radar-legend-pct" style="color:${col}">${data[i]}%</span>
+      <div class="radar-legend-top">
+        <span class="radar-legend-name">${ex}</span>
+        <span class="radar-legend-val">${valStr}</span>
+        <span class="radar-legend-pct" style="color:${col}">${data[i]}%</span>
+      </div>
+      <div class="radar-legend-bar"><span style="width:${data[i]}%;background:${col}"></span></div>
     </div>`;
   }).join('')+`<div class="radar-cat-note">Última medición fronte á túa mellor marca</div>`;
 
   if(state.charts.radar)state.charts.radar.destroy();
   state.charts.radar=new Chart($('radar-chart').getContext('2d'),{
     type:'radar',
-    data:{labels,datasets:[{data,backgroundColor:'rgba(255,71,87,.15)',borderColor:'#FF4757',pointBackgroundColor:'#FF4757',pointRadius:4,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:true,scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#2a2a2a'},pointLabels:{color:'#f0f0f0',font:{size:10}},angleLines:{color:'#2a2a2a'}}},plugins:{legend:{display:false}}}
+    data:{labels,datasets:[
+      {label:'Actual',data,order:1,backgroundColor:'rgba(255,71,87,.3)',borderColor:'#FF4757',borderWidth:3,
+        pointBackgroundColor:'#FF4757',pointBorderColor:'#0D0D0D',pointBorderWidth:2,pointRadius:5,pointHoverRadius:7},
+      {label:'Anterior',data:prevData,order:2,spanGaps:true,backgroundColor:'rgba(255,255,255,.05)',borderColor:'rgba(200,200,200,.55)',borderWidth:1.5,borderDash:[5,4],
+        pointBackgroundColor:'#0D0D0D',pointBorderColor:'rgba(200,200,200,.7)',pointBorderWidth:1.5,pointRadius:3,pointHoverRadius:5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,animation:{duration:1100,easing:'easeOutQuart'},
+      scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,.09)'},angleLines:{color:'rgba(255,255,255,.07)'},
+        pointLabels:{color:'#C8C8C8',font:{family:'Inter',size:13,weight:'500'}}}},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1F1F1F',borderColor:'#333',borderWidth:1,titleColor:'#A0A0A0',bodyColor:'#F5F5F5',titleFont:{family:'Inter',size:13},bodyFont:{family:'Inter',size:14,weight:'600'},callbacks:{label:c=>`${c.dataset.label}: ${c.raw}% da mellor marca`}}}},
+    plugins:[{id:'henkoGlow',beforeDatasetDraw(c,a){if(a.index!==0)return;c.ctx.save();c.ctx.shadowColor='rgba(255,71,87,.65)';c.ctx.shadowBlur=16;},afterDatasetDraw(c,a){if(a.index!==0)return;c.ctx.restore();}}]
   });
 }
 
@@ -703,8 +844,13 @@ function renderExerciseCards(ejercicios){
         const vals=records.map(r=>cfg.rm1?r.carga*RM1_FACTOR:r.carga);
         state.charts[cid]=new Chart(canvas.getContext('2d'),{
           type:'line',
-          data:{labels:records.map(r=>formatDateGL(r.fecha)),datasets:[{data:vals,borderColor:'#FF4757',backgroundColor:'rgba(255,71,87,.08)',tension:0.4,pointRadius:3,pointBackgroundColor:'#FF4757',fill:true}]},
-          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#777',font:{size:9},maxRotation:30},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#777',font:{size:9}},grid:{color:'#1a1a1a'}}}}
+          data:{labels:records.map(r=>formatDateGL(r.fecha)),datasets:[{data:vals,borderColor:'#FF4757',borderWidth:2.5,tension:0.35,fill:true,
+            backgroundColor:c=>{const a=c.chart.chartArea;if(!a)return'rgba(255,71,87,.2)';const g=c.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,'rgba(255,71,87,.45)');g.addColorStop(1,'rgba(255,71,87,0)');return g;},
+            pointRadius:c=>c.dataIndex===c.dataset.data.length-1?5:0,pointHoverRadius:5,pointBackgroundColor:'#FFFFFF',pointBorderColor:'#FF4757',pointBorderWidth:2}]},
+          options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:{top:8,right:10,bottom:0,left:0}},
+            plugins:{legend:{display:false},tooltip:{backgroundColor:'#1F1F1F',borderColor:'#333',borderWidth:1,titleColor:'#A0A0A0',bodyColor:'#F5F5F5',titleFont:{family:'Inter',size:13},bodyFont:{family:'Inter',size:14,weight:'600'},displayColors:false,padding:10}},
+            scales:{x:{display:false},y:{display:false,grace:'10%'}}},
+          plugins:[{id:'henkoGlow',beforeDatasetsDraw(c){c.ctx.save();c.ctx.shadowColor='rgba(255,71,87,.7)';c.ctx.shadowBlur=10;c.ctx.shadowOffsetY=3;},afterDatasetsDraw(c){c.ctx.restore();}}]
         });
       }
     }
@@ -723,7 +869,7 @@ function buildCard(name,cfg,records){
   // Distintivo de marca persoal (substitúe á antiga medalla de ranking)
   let rankHTML='';
   if(!cfg.norank&&isPB(cfg,records)){
-    rankHTML=`<div class="rank-pill rank-gold">🔥 Marca persoal</div>`;
+    rankHTML=`<div class="rank-pill rank-gold"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0 6.2 3.6 10 3.8 7 6.1 8.1 10 5 7.7 1.9 10 3 6.1 0 3.8 3.8 3.6Z"/></svg>Marca persoal</div>`;
   }
 
   // Evolution
@@ -731,18 +877,19 @@ function buildCard(name,cfg,records){
   if(prev&&curVal!==null){
     const pv=cfg.rm1?prev.carga*RM1_FACTOR:prev.carga;const diff=curVal-pv;
     const improved=cfg.lib?diff<0:diff>0;const sign=diff>0?'+':'';
-    evoHTML=`<div class="mini-stat"><span class="ms-label">Evolución</span><span class="ms-val ${improved?'positive':diff===0?'':'negative'}">${sign}${fmtNum(diff,cfg.rm1)} ${cfg.unit}</span></div>`;
+    // O peso corporal non se cualifica: baixar ou subir non é mellor nin peor para todos
+    const evoCls=(cfg.norank||diff===0)?'':(improved?'positive':'negative');
+    const evoTitle=evoCls==='positive'?'Mellora':evoCls==='negative'?'Empeora':'';
+    evoHTML=`<div class="mini-stat"><span class="ms-label">Evolución</span><span class="ms-val ${evoCls}"${evoTitle?` title="${evoTitle}"`:''}>${sign}${fmtNum(diff,cfg.rm1)} ${cfg.unit}</span></div>`;
   }
 
   // Progreso da última medición respecto á TÚA mellor marca (só con 2+ medicións)
   let progressHTML='';
   if(!cfg.norank&&exValues(cfg,records).length>=2){
     const up=pctOfBest(cfg,records);
-    progressHTML=`<div class="progress-section">
-      <div class="progress-label"><span>Última fronte á túa mellor marca</span><span>${up}%</span></div>
-      <div class="progress-wrap">
-        <div class="progress-bar"><div class="progress-fill" style="width:${up}%"></div></div>
-      </div>
+    progressHTML=`<div class="progress-section" title="Última fronte á túa mellor marca">
+      <div class="progress-ring" style="--p:${up}"></div>
+      <span class="progress-label">${up}%</span>
     </div>`;
   }
 
@@ -758,15 +905,15 @@ function buildCard(name,cfg,records){
   div.innerHTML=`
     <div class="exercise-header">
       <div class="exercise-header-left">
-        <span class="exercise-icon">${cfg.icon}</span>
-        <div><div class="exercise-name">${name}</div><div class="exercise-desc">${cfg.desc}</div></div>
+        ${rankHTML}
+        <div class="exercise-name">${name}</div>
+        <div class="exercise-desc">${cfg.desc}</div>
       </div>
-      ${rankHTML}
     </div>
     ${hasData?`
-      <div><span class="exercise-value">${fmtNum(curVal,cfg.rm1)}</span><span class="exercise-unit">${cfg.unit}</span></div>
+      <div class="exercise-main"><span class="exercise-value">${fmtNum(curVal,cfg.rm1)}</span><span class="exercise-unit">${cfg.unit}</span></div>
       <div class="exercise-date">Último: ${formatDateGL(last.fecha)}</div>
-      ${miniStats}${progressHTML}${chartHTML}
+      ${chartHTML}${miniStats}
     `:'<div class="no-data">Sen rexistros aínda</div>'}`;
   return div;
 }
@@ -776,13 +923,16 @@ function buildModalInputs(){
   $('modal-exercises').innerHTML=Object.entries(EXERCISES).map(([name,cfg])=>{
     const id=exToId(name);
     return`<div class="modal-ex-row" id="row-${id}">
-      <span class="modal-ex-icon">${cfg.icon}</span>
-      <div class="modal-ex-info">
-        <div class="modal-ex-name">${name}</div>
-        <div class="modal-ex-desc">${cfg.desc}</div>
+      <div class="modal-ex-head">
+        <span class="modal-ex-num" aria-hidden="true"></span>
+        <div class="modal-ex-info">
+          <label class="modal-ex-name" for="input-${id}">${name}</label>
+          <div class="modal-ex-desc">${cfg.desc}</div>
+        </div>
       </div>
       <div class="modal-ex-right">
-        <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit==='seg'?'s ou m:ss':cfg.unit}" inputmode="${cfg.unit==='seg'?'text':'decimal'}" autocomplete="off" aria-label="${name} (${cfg.unit})">
+        <span class="modal-ex-unit" aria-hidden="true">${cfg.unit}</span>
+        <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit==='seg'?'134 ou 2:14':''}" inputmode="${cfg.unit==='seg'?'text':'decimal'}" autocomplete="off" aria-label="${name} (${cfg.unit})">
         <button class="nr-btn" id="nr-${id}" type="button">Non realizado</button>
         <span class="locked-tag" id="locked-${id}"></span>
       </div>
@@ -902,7 +1052,7 @@ function reviewEvals(){
 
   $('confirm-warning').style.display='none';
 
-  $('confirm-list').innerHTML=`<div class="confirm-row"><span>Data</span><b>${formatDateGL(fecha)}</b></div>`+
+  $('confirm-list').innerHTML=`<div class="confirm-row confirm-date"><span>Data</span><b>${formatDateGL(fecha)}</b></div>`+
     Object.entries(EXERCISES).map(([name,cfg])=>{
       const it=data.find(x=>x.ejercicio===name);
       if(it)return`<div class="confirm-row"><span>${name}</span><b>${fmtGL(it.carga)} ${cfg.unit}</b></div>`;
@@ -946,6 +1096,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('login-id').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
   $('btn-new-user').addEventListener('click',showRegister);
   $('btn-trainer-access').addEventListener('click',openTrainer);
+  $('trainer-pass-btn').addEventListener('click',submitTrainer);
+  $('trainer-pass').addEventListener('keydown',e=>e.key==='Enter'&&submitTrainer());
+  $('trainer-modal-close').addEventListener('click',closeTrainerModal);
+  $('trainer-modal').addEventListener('click',e=>{if(e.target===$('trainer-modal'))closeTrainerModal();});
 
   $('reg-back').addEventListener('click',()=>showScreen('login'));
   $('reg-btn').addEventListener('click',doRegister);
@@ -969,6 +1123,44 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   showScreen('login');
 });
+</script>
+<script>
+// ══ ANIMACIÓNS E AXUDAS DE INTERFACE ════════════════════════════════════════
+// Non toca a lógica da app: só aparición das tarxetas ao desprazar e o botón
+// da tarxeta baleira. Respecta "reducir movemento" do sistema.
+(function(){
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce&&window.Chart)Chart.defaults.animation=false;
+  document.addEventListener('DOMContentLoaded',()=>{
+    const empty=document.querySelector('#dash-empty .empty-card');
+    if(empty){empty.style.cursor='pointer';empty.addEventListener('click',()=>document.getElementById('btn-add-eval').click());}
+    if(reduce||!('IntersectionObserver' in window))return;
+    const replay=el=>{
+      if(typeof state==='undefined'||!state.charts)return;
+      el.querySelectorAll('canvas').forEach(cv=>{
+        const ch=cv.id==='radar-chart'?state.charts.radar:state.charts[cv.id];
+        if(ch&&cv.id==='radar-chart'){try{ch.reset();ch.update();}catch(e){}}
+      });
+    };
+    const io=new IntersectionObserver(entries=>{
+      let n=0;
+      entries.forEach(en=>{
+        if(!en.isIntersecting)return;
+        const el=en.target;io.unobserve(el);
+        el.style.transitionDelay=(n++*70)+'ms';
+        requestAnimationFrame(()=>{el.classList.add('rv-in');replay(el);});
+        setTimeout(()=>{el.style.transitionDelay='';},1400);
+      });
+    },{threshold:.15});
+    const scan=()=>{
+      if(!document.getElementById('screen-dashboard').classList.contains('active'))return;
+      document.querySelectorAll('#dash-content .stat-card,#radar-card,.exercise-card,#dash-empty .empty-card').forEach(el=>{
+        if(el.dataset.rv)return;el.dataset.rv='1';el.classList.add('rv');io.observe(el);
+      });
+    };
+    new MutationObserver(scan).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  });
+})();
 </script>
 </body>
 </html>
