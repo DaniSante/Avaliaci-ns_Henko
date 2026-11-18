@@ -171,6 +171,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .modal-ex-input:focus{border-color:var(--accent);}
 .modal-ex-input.err{border-color:var(--red-neg);}
 .modal-ex-input::placeholder{color:var(--muted);font-size:12px;}
+.confirm-title{font-size:13px;font-weight:600;margin:4px 0 10px;}
+.confirm-list{display:flex;flex-direction:column;gap:2px;margin-bottom:18px;}
+.confirm-row{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;background:var(--surf2);border-radius:8px;font-size:13px;}
+.confirm-row.nr{color:var(--muted);}
+.confirm-row b{font-variant-numeric:tabular-nums;}
+.confirm-warning{font-size:13px;line-height:1.45;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:rgba(255,215,0,.1);color:var(--gold);}
+.confirm-actions{display:flex;gap:10px;}
+.confirm-actions .btn{flex:1;}
 .nr-btn{font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:'Inter',sans-serif;}
 .nr-btn:hover{border-color:var(--muted);color:var(--text);}
 .nr-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,71,87,.08);}
@@ -368,8 +376,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <input type="date" id="modal-date" class="input-field" style="padding:10px 14px">
     </div>
     <div class="modal-note">Todos os campos son obrigatorios. Se non realizaches un exercicio, marca <strong>Non realizado</strong>.</div>
-    <div id="modal-exercises"></div>
-    <button id="btn-save-evals" class="btn btn-primary">Gardar resultados</button>
+    <div id="modal-form">
+      <div id="modal-exercises"></div>
+      <div id="modal-error" class="error-msg" style="display:none;margin-bottom:14px;white-space:pre-line"></div>
+      <button id="btn-save-evals" class="btn btn-primary">Revisar e gardar</button>
+    </div>
+    <div id="modal-confirm" style="display:none">
+      <div id="confirm-warning" class="confirm-warning" style="display:none"></div>
+      <div class="confirm-title">Revisa os datos antes de gardar</div>
+      <div id="confirm-list" class="confirm-list"></div>
+      <div class="confirm-actions">
+        <button id="btn-confirm-back" class="btn btn-secondary" type="button">Corrixir</button>
+        <button id="btn-confirm-save" class="btn btn-primary" type="button">Confirmar e gardar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -386,20 +406,21 @@ const TRAINER_CODE = 'HENKO2026';
 const MONTHS_GL = ['xan','feb','mar','abr','mai','xuñ','xul','ago','set','out','nov','dec'];
 
 const EXERCISES = {
-  'PRESS BANCA':        {unit:'kg', desc:'1RM estimado · 5 reps', icon:'💪',short:'PRESS',   lib:false,rm1:true },
-  'JALÓN':              {unit:'kg', desc:'1RM estimado · 5 reps', icon:'⬇️',short:'JALÓN',   lib:false,rm1:true },
-  'MID-THIGH PULL':     {unit:'kg', desc:'Carga máxima tirón medio-muslo',   icon:'⬆️',short:'MTP',     lib:false,rm1:false},
-  'HAND GRIP ESQUERDA': {unit:'kg', desc:'Forza de prensión manual esquerda',icon:'🤛',short:'GRIP ESQ',lib:false,rm1:false},
-  'HAND GRIP DEREITA':  {unit:'kg', desc:'Forza de prensión manual dereita', icon:'🤜',short:'GRIP DER',lib:false,rm1:false},
-  'CMJ':                {unit:'cm', desc:'Altura de salto con contramovemento',icon:'🦘',short:'CMJ',   lib:false,rm1:false},
-  'ROWERG':             {unit:'seg',desc:'Tempo en 500m en remo',            icon:'🚣',short:'ROWERG',  lib:true, rm1:false},
-  'PESO CORPORAL':      {unit:'kg', desc:'Peso corporal rexistrado',         icon:'⚖️',short:'PESO',    lib:false,rm1:false,norank:true}
+  // min / max: valores aceptados ao rexistrar. Fóra dese rango a app non deixa gardar.
+  'PRESS BANCA':        {unit:'kg', desc:'1RM estimado · 5 reps', icon:'💪',short:'PRESS',   lib:false,rm1:true , min:1, max:200 },
+  'JALÓN':              {unit:'kg', desc:'1RM estimado · 5 reps', icon:'⬇️',short:'JALÓN',   lib:false,rm1:true , min:1, max:200 },
+  'MID-THIGH PULL':     {unit:'kg', desc:'Carga máxima tirón medio-muslo',   icon:'⬆️',short:'MTP',     lib:false,rm1:false, min:1, max:5000},
+  'HAND GRIP ESQUERDA': {unit:'kg', desc:'Forza de prensión manual esquerda',icon:'🤛',short:'GRIP ESQ',lib:false,rm1:false, min:1, max:90  },
+  'HAND GRIP DEREITA':  {unit:'kg', desc:'Forza de prensión manual dereita', icon:'🤜',short:'GRIP DER',lib:false,rm1:false, min:1, max:90  },
+  'CMJ':                {unit:'cm', desc:'Altura de salto con contramovemento',icon:'🦘',short:'CMJ',   lib:false,rm1:false, min:1, max:80  },
+  'ROWERG':             {unit:'seg',desc:'Tempo en 500m en remo',            icon:'🚣',short:'ROWERG',  lib:true, rm1:false, min:1, max:500 },
+  'PESO CORPORAL':      {unit:'kg', desc:'Peso corporal rexistrado',         icon:'⚖️',short:'PESO',    lib:false,rm1:false,norank:true, min:1, max:200}
 };
 const RM1_FACTOR = 1.1667;
 
 // Known data corrections — remove each entry once fixed in Google Sheets
 const DATA_CORRECTIONS = {
-  '789': { 'ROWERG': { exclude:[82], correctBest:132 } } // Angela Amat: 82s was incorrect measurement
+  '789': { 'ROWERG': { exclude:[82], correctBest:132 } } // 82 s: medición errónea
 };
 // Nomes que poden vir da folla de cálculo cunha grafía antiga → nome actual.
 // Así non hai que renomear os rexistros históricos no Sheets: a app entende
@@ -424,6 +445,9 @@ let nrSet = new Set(); // exercises marked "non realizado" in modal
 
 // ══ UTILS ══════════════════════════════════════════════════════════════════
 const $ = id => document.getElementById(id);
+// Escapa texto antes de metelo en innerHTML (nomes escritos polos usuarios).
+const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtGL = n => String(n).replace('.', ',');
 const pad = n => String(n).padStart(2,'0');
 
 function showLoading(on){on?$('loading-overlay').classList.add('show'):$('loading-overlay').classList.remove('show');}
@@ -445,8 +469,14 @@ function isPlaceholderName(name){
 }
 
 // ══ API ════════════════════════════════════════════════════════════════════
+const API_TIMEOUT_MS = 20000;
 async function apiGet(params){
-  const res=await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`,{redirect:'follow'});
+  // Sen timeout, unha chamada que non responde deixaba a app conxelada.
+  const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),API_TIMEOUT_MS);
+  let res;
+  try{res=await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`,{redirect:'follow',signal:ctrl.signal});}
+  catch(e){throw new Error(e.name==='AbortError'?'O servidor tarda demasiado. Téntao de novo.':'Erro de conexión');}
+  finally{clearTimeout(t);}
   const txt=await res.text();
   try{return JSON.parse(txt);}catch(e){throw new Error('Resposta inválida do servidor');}
 }
@@ -467,7 +497,7 @@ async function doLogin(){
       $('btn-new-user').classList.remove('pulse');void $('btn-new-user').offsetWidth;
       $('btn-new-user').classList.add('pulse');
     }
-  }catch(e){$('login-error').textContent='Erro de conexión.';$('login-error').style.display='block';}
+  }catch(e){$('login-error').textContent=e.message||'Erro de conexión.';$('login-error').style.display='block';}
   showLoading(false);
 }
 
@@ -498,8 +528,8 @@ function renderTrainerResults(q){
   const query=q.toLowerCase().trim();
   const list=(state.allClients||[]).filter(c=>!query||c.name.toLowerCase().includes(query));
   const cont=$('trainer-results');
-  if(!list.length){cont.innerHTML=`<div class="trainer-empty">${query?`Sen resultados para "${q}"`:'Non hai alumnos'}</div>`;return;}
-  cont.innerHTML=list.map(c=>`<div class="trainer-row"><span class="trainer-name">${c.name}</span><span class="trainer-id">${c.id}</span></div>`).join('');
+  if(!list.length){cont.innerHTML=`<div class="trainer-empty">${query?`Sen resultados para "${escapeHtml(q)}"`:'Non hai alumnos'}</div>`;return;}
+  cont.innerHTML=list.map(c=>`<div class="trainer-row"><span class="trainer-name">${escapeHtml(c.name)}</span><span class="trainer-id">${escapeHtml(c.id)}</span></div>`).join('');
 }
 
 // ══ REGISTER ═══════════════════════════════════════════════════════════════
@@ -518,7 +548,7 @@ async function doRegister(){
       if(ud.ejercicios)ud.ejercicios=applyUserDataCorrections(id,ud.ejercicios);
       state.userId=id;state.userData=ud;renderDashboard();showScreen('dashboard');
     }else{$('reg-error').textContent=r.error||'Este código xa ten un deportista rexistrado';$('reg-error').style.display='block';}
-  }catch(e){$('reg-error').textContent='Erro de conexión';$('reg-error').style.display='block';}
+  }catch(e){$('reg-error').textContent=e.message||'Erro de conexión';$('reg-error').style.display='block';}
   showLoading(false);
 }
 
@@ -571,7 +601,7 @@ function latestDate(ejercicios){
 
 // ── Hero ────────────────────────────────────────────────────────────────────
 function renderHero(name,ejercicios){
-  $('hero-name').innerHTML=`Benvido/a, ${name}`;
+  $('hero-name').textContent=`Benvido/a, ${name}`;
   const latest=latestDate(ejercicios);
   $('hero-date').textContent=latest?`Última avaliación: ${formatDateGL(latest)}`:'';
 }
@@ -747,7 +777,7 @@ function buildModalInputs(){
         <div class="modal-ex-desc">${cfg.desc}</div>
       </div>
       <div class="modal-ex-right">
-        <input type="number" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit}" step="${cfg.unit==='kg'?'0.5':cfg.unit==='cm'?'0.1':'1'}" min="0.01">
+        <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit}" inputmode="decimal" autocomplete="off" aria-label="${name} (${cfg.unit})">
         <button class="nr-btn" id="nr-${id}" type="button">Non realizado</button>
       </div>
     </div>`;
@@ -792,41 +822,84 @@ function openModal(){
     if(row)row.classList.remove('is-nr');
   });
   $('modal-date').value=todayInputVal();
+  pendingEvals=null;showModalError('');showConfirm(false);
   $('modal-evals').classList.add('open');
 }
 function closeModal(){$('modal-evals').classList.remove('open');}
 
-async function saveEvals(){
+// Se o valor está fóra de rango, proba se é unha coma esquecida (605 → 60,5).
+function suggestValue(val,cfg){
+  for(const d of [10,100,1000]){
+    const v=val/d;
+    if(v>=cfg.min&&v<=cfg.max)return fmtGL(Math.round(v*100)/100);
+  }
+  return null;
+}
+function showModalError(msg){const e=$('modal-error');e.textContent=msg;e.style.display=msg?'block':'none';}
+function showConfirm(on){$('modal-form').style.display=on?'none':'';document.querySelectorAll('#modal-evals .modal-date-row,#modal-evals .modal-note').forEach(el=>el.style.display=on?'none':'');$('modal-confirm').style.display=on?'':'none';document.querySelector('#modal-evals .modal-card').scrollTop=0;}
+
+let pendingEvals=null;
+function reviewEvals(){
+  showModalError('');
   const dateVal=$('modal-date').value;
-  if(!dateVal){alert('Selecciona unha data');return;}
+  if(!dateVal){showModalError('Selecciona unha data.');return;}
   const[y,m,d]=dateVal.split('-');const fecha=`${d}/${m}/${y}`;
 
-  const data=[];const missing=[];
+  const data=[];const missing=[];const outOfRange=[];
   for(const[name,cfg]of Object.entries(EXERCISES)){
-    if(nrSet.has(name))continue; // explicitly skipped
+    if(nrSet.has(name))continue; // marcado como non realizado
     const id=exToId(name);const inp=$(`input-${id}`);
-    const val=parseFloat(inp.value.trim());
-    if(isNaN(val)||val<=0){missing.push(name);inp.classList.add('err');}
-    else{inp.classList.remove('err');data.push({ejercicio:name,carga:val,fecha});}
+    const raw=inp.value.trim().replace(',','.');
+    if(raw===''){missing.push(name);inp.classList.add('err');continue;}
+    // Acepta 60 · 60,5 · 60.5 — calquera outra cousa é un erro de escritura
+    if(!/^\d+(\.\d+)?$/.test(raw)){outOfRange.push(`• ${name}: "${inp.value.trim()}" non é un número válido.`);inp.classList.add('err');continue;}
+    const val=parseFloat(raw);
+    if(val<cfg.min||val>cfg.max){
+      const sug=val>cfg.max?suggestValue(val,cfg):null;
+      outOfRange.push(`• ${name}: ${fmtGL(val)} ${cfg.unit} non é válido (entre ${cfg.min} e ${cfg.max} ${cfg.unit}).`+(sug?` ¿Querías poñer ${sug}?`:''));
+      inp.classList.add('err');continue;
+    }
+    inp.classList.remove('err');data.push({ejercicio:name,carga:val,fecha});
   }
+  const msgs=[];
+  if(outOfRange.length)msgs.push(`Revisa estes valores:\n${outOfRange.join('\n')}`);
+  if(missing.length)msgs.push(`Enche estes exercicios ou márcaos como "Non realizado":\n${missing.map(n=>'• '+n).join('\n')}`);
+  if(msgs.length){showModalError(msgs.join('\n\n'));return;}
+  if(!data.length){showModalError('Polo menos un exercicio debe ter un valor rexistrado.');return;}
 
-  if(missing.length>0){
-    alert(`Enche os seguintes exercicios ou márcaos como "Non realizado":\n\n${missing.join('\n')}`);
-    return;
-  }
-  if(data.length===0){alert('Polo menos un exercicio debe ter un valor rexistrado.');return;}
+  // Aviso se xa hai unha avaliación nesa data (evita envíos repetidos)
+  const ej=(state.userData&&state.userData.ejercicios)||{};
+  const already=Object.values(ej).flat().some(r=>r&&r.fecha===fecha);
+  const warn=$('confirm-warning');
+  if(already){warn.textContent=`⚠️ Xa tes unha avaliación gardada o ${formatDateGL(fecha)}. Se gardas, quedará duplicada. Se só querías corrixir algo, avisa ao teu adestrador.`;warn.style.display='block';}
+  else warn.style.display='none';
 
+  $('confirm-list').innerHTML=`<div class="confirm-row"><span>Data</span><b>${formatDateGL(fecha)}</b></div>`+
+    Object.entries(EXERCISES).map(([name,cfg])=>{
+      const it=data.find(x=>x.ejercicio===name);
+      return it?`<div class="confirm-row"><span>${name}</span><b>${fmtGL(it.carga)} ${cfg.unit}</b></div>`
+               :`<div class="confirm-row nr"><span>${name}</span><span>Non realizado</span></div>`;
+    }).join('');
+  pendingEvals=data;
+  showConfirm(true);
+}
+
+let saving=false;
+async function saveEvals(){
+  if(saving||!pendingEvals)return;   // evita dobre envío
+  saving=true;const btn=$('btn-confirm-save');btn.disabled=true;btn.textContent='Gardando…';
   showLoading(true);
   try{
-    const r=await apiGet({action:'addEvals',id:state.userId,name:state.userData.name,data:JSON.stringify(data)});
+    const r=await apiGet({action:'addEvals',id:state.userId,name:state.userData.name,data:JSON.stringify(pendingEvals)});
     if(r.success){
-      closeModal();
+      pendingEvals=null;closeModal();
       const ud=await apiGet({action:'getUser',id:state.userId});
       if(ud.ejercicios)ud.ejercicios=applyUserDataCorrections(state.userId,ud.ejercicios);
       state.userData=ud;renderDashboard();
-    }else{alert('Erro ao gardar: '+(r.error||'Descoñecido'));}
-  }catch(e){alert('Erro de conexión');}
+    }else{showConfirm(false);showModalError('Erro ao gardar: '+(r.error||'descoñecido'));}
+  }catch(e){showConfirm(false);showModalError(e.message||'Erro de conexión');}
   showLoading(false);
+  saving=false;btn.disabled=false;btn.textContent='Confirmar e gardar';
 }
 
 // ══ INIT ═══════════════════════════════════════════════════════════════════
@@ -853,7 +926,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   $('modal-close').addEventListener('click',closeModal);
   $('modal-evals').addEventListener('click',e=>{if(e.target===$('modal-evals'))closeModal();});
-  $('btn-save-evals').addEventListener('click',saveEvals);
+  $('btn-save-evals').addEventListener('click',reviewEvals);
+  $('btn-confirm-back').addEventListener('click',()=>showConfirm(false));
+  $('btn-confirm-save').addEventListener('click',saveEvals);
 
   showScreen('login');
 });
