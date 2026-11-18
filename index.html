@@ -71,6 +71,11 @@ a{color:var(--accent);}a:hover{color:var(--text);}
 .input-code{font-family:var(--bebas);font-size:36px;letter-spacing:.18em;padding-top:4px;min-height:64px;}
 .input-code::placeholder{font-family:'Inter',sans-serif;font-size:16px;letter-spacing:0;}
 input[type=date].input-field{color-scheme:dark;font-size:17px;}
+/* Safari (iPhone): o campo de data ten un ancho mínimo propio e sae do recadro; e centra o texto */
+input[type=date].input-field{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;width:100%;line-height:60px;text-align:left;}
+input[type=date].input-field::-webkit-date-and-time-value{text-align:left;margin:0;}
+input[type=date].input-field::-webkit-datetime-edit{padding:0;}
+.modal-date-row{min-width:0;overflow:hidden;}
 
 .error-msg{position:relative;padding:14px 16px 14px 52px;border-radius:18px;background:linear-gradient(165deg,rgba(255,71,87,.16),rgba(255,71,87,.05));border:1px solid rgba(255,71,87,.45);font-size:14px;line-height:1.55;color:#E6E6E6;text-align:left;}
 .error-msg::before{content:'!';position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;}
