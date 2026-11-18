@@ -179,6 +179,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .confirm-warning{font-size:13px;line-height:1.45;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:rgba(255,215,0,.1);color:var(--gold);}
 .confirm-actions{display:flex;gap:10px;}
 .confirm-actions .btn{flex:1;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.locked-tag{display:none;font-size:11px;font-weight:600;color:var(--green);text-align:right;line-height:1.3;max-width:110px;}
+.modal-ex-row.is-locked .modal-ex-input,.modal-ex-row.is-locked .nr-btn{display:none;}
+.modal-ex-row.is-locked .locked-tag{display:block;}
+.modal-ex-row.is-locked{opacity:.75;}
 .nr-btn{font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:'Inter',sans-serif;}
 .nr-btn:hover{border-color:var(--muted);color:var(--text);}
 .nr-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,71,87,.08);}
@@ -375,7 +380,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <label>Data da avaliación</label>
       <input type="date" id="modal-date" class="input-field" style="padding:10px 14px">
     </div>
-    <div class="modal-note">Todos os campos son obrigatorios. Se non realizaches un exercicio, marca <strong>Non realizado</strong>.</div>
+    <div class="modal-note">Todos os campos son obrigatorios. Se non realizaches un exercicio, marca <strong>Non realizado</strong>. Cada exercicio só se pode rexistrar <strong>unha vez por día</strong>.</div>
     <div id="modal-form">
       <div id="modal-exercises"></div>
       <div id="modal-error" class="error-msg" style="display:none;margin-bottom:14px;white-space:pre-line"></div>
@@ -779,6 +784,7 @@ function buildModalInputs(){
       <div class="modal-ex-right">
         <input type="text" id="input-${id}" class="modal-ex-input" placeholder="${cfg.unit}" inputmode="decimal" autocomplete="off" aria-label="${name} (${cfg.unit})">
         <button class="nr-btn" id="nr-${id}" type="button">Non realizado</button>
+        <span class="locked-tag" id="locked-${id}"></span>
       </div>
     </div>`;
   }).join('');
@@ -822,7 +828,7 @@ function openModal(){
     if(row)row.classList.remove('is-nr');
   });
   $('modal-date').value=todayInputVal();
-  pendingEvals=null;showModalError('');showConfirm(false);
+  pendingEvals=null;showModalError('');showConfirm(false);applyDateLocks();
   $('modal-evals').classList.add('open');
 }
 function closeModal(){$('modal-evals').classList.remove('open');}
@@ -838,6 +844,26 @@ function suggestValue(val,cfg){
 function showModalError(msg){const e=$('modal-error');e.textContent=msg;e.style.display=msg?'block':'none';}
 function showConfirm(on){$('modal-form').style.display=on?'none':'';document.querySelectorAll('#modal-evals .modal-date-row,#modal-evals .modal-note').forEach(el=>el.style.display=on?'none':'');$('modal-confirm').style.display=on?'':'none';document.querySelector('#modal-evals .modal-card').scrollTop=0;}
 
+// Exercicios xa rexistrados na data escollida: quedan bloqueados (un rexistro por exercicio e día)
+let lockedSet=new Set();
+function modalFecha(){const v=$('modal-date').value;if(!v)return'';const[y,m,d]=v.split('-');return`${d}/${m}/${y}`;}
+function applyDateLocks(){
+  const fecha=modalFecha();const ej=(state.userData&&state.userData.ejercicios)||{};
+  lockedSet=new Set();
+  Object.entries(EXERCISES).forEach(([name,cfg])=>{
+    const id=exToId(name);const row=$(`row-${id}`);if(!row)return;
+    const rec=fecha?(ej[name]||[]).find(r=>r&&r.fecha===fecha):null;
+    if(rec){
+      lockedSet.add(name);row.classList.add('is-locked');
+      $(`locked-${id}`).textContent=`✓ Xa rexistrado (${fmtGL(rec.carga)} ${cfg.unit})`;
+      $(`input-${id}`).classList.remove('err');
+    }else{row.classList.remove('is-locked');}
+  });
+  const all=Object.keys(EXERCISES).every(n=>lockedSet.has(n));
+  $('btn-save-evals').disabled=all;
+  showModalError(all?'Xa tes todos os exercicios rexistrados nesa data. Se hai que corrixir algún dato, fala co teu adestrador.':'');
+}
+
 let pendingEvals=null;
 function reviewEvals(){
   showModalError('');
@@ -847,7 +873,7 @@ function reviewEvals(){
 
   const data=[];const missing=[];const outOfRange=[];
   for(const[name,cfg]of Object.entries(EXERCISES)){
-    if(nrSet.has(name))continue; // marcado como non realizado
+    if(nrSet.has(name)||lockedSet.has(name))continue; // non realizado ou xa rexistrado nesa data
     const id=exToId(name);const inp=$(`input-${id}`);
     const raw=inp.value.trim().replace(',','.');
     if(raw===''){missing.push(name);inp.classList.add('err');continue;}
@@ -867,18 +893,13 @@ function reviewEvals(){
   if(msgs.length){showModalError(msgs.join('\n\n'));return;}
   if(!data.length){showModalError('Polo menos un exercicio debe ter un valor rexistrado.');return;}
 
-  // Aviso se xa hai unha avaliación nesa data (evita envíos repetidos)
-  const ej=(state.userData&&state.userData.ejercicios)||{};
-  const already=Object.values(ej).flat().some(r=>r&&r.fecha===fecha);
-  const warn=$('confirm-warning');
-  if(already){warn.textContent=`⚠️ Xa tes unha avaliación gardada o ${formatDateGL(fecha)}. Se gardas, quedará duplicada. Se só querías corrixir algo, avisa ao teu adestrador.`;warn.style.display='block';}
-  else warn.style.display='none';
+  $('confirm-warning').style.display='none';
 
   $('confirm-list').innerHTML=`<div class="confirm-row"><span>Data</span><b>${formatDateGL(fecha)}</b></div>`+
     Object.entries(EXERCISES).map(([name,cfg])=>{
       const it=data.find(x=>x.ejercicio===name);
-      return it?`<div class="confirm-row"><span>${name}</span><b>${fmtGL(it.carga)} ${cfg.unit}</b></div>`
-               :`<div class="confirm-row nr"><span>${name}</span><span>Non realizado</span></div>`;
+      if(it)return`<div class="confirm-row"><span>${name}</span><b>${fmtGL(it.carga)} ${cfg.unit}</b></div>`;
+      return`<div class="confirm-row nr"><span>${name}</span><span>${lockedSet.has(name)?'Xa rexistrado':'Non realizado'}</span></div>`;
     }).join('');
   pendingEvals=data;
   showConfirm(true);
@@ -896,7 +917,15 @@ async function saveEvals(){
       const ud=await apiGet({action:'getUser',id:state.userId});
       if(ud.ejercicios)ud.ejercicios=applyUserDataCorrections(state.userId,ud.ejercicios);
       state.userData=ud;renderDashboard();
-    }else{showConfirm(false);showModalError('Erro ao gardar: '+(r.error||'descoñecido'));}
+    }else{
+      showConfirm(false);
+      if(r.duplicado){   // rexistrado desde outro dispositivo: actualizar datos e bloqueos
+        try{const ud=await apiGet({action:'getUser',id:state.userId});
+          if(ud.ejercicios)ud.ejercicios=applyUserDataCorrections(state.userId,ud.ejercicios);
+          state.userData=ud;renderDashboard();applyDateLocks();}catch(e){}
+      }
+      showModalError(r.error||'Erro ao gardar');
+    }
   }catch(e){showConfirm(false);showModalError(e.message||'Erro de conexión');}
   showLoading(false);
   saving=false;btn.disabled=false;btn.textContent='Confirmar e gardar';
@@ -928,6 +957,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('modal-evals').addEventListener('click',e=>{if(e.target===$('modal-evals'))closeModal();});
   $('btn-save-evals').addEventListener('click',reviewEvals);
   $('btn-confirm-back').addEventListener('click',()=>showConfirm(false));
+  $('modal-date').addEventListener('change',applyDateLocks);
   $('btn-confirm-save').addEventListener('click',saveEvals);
 
   showScreen('login');
